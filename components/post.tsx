@@ -13,6 +13,7 @@ type PostProps = {
   username: string;
   initialScore?: number;
   tags?: string[];
+  date: string; // Add the date field
 };
 
 const Post: React.FC<PostProps> = ({
@@ -21,6 +22,7 @@ const Post: React.FC<PostProps> = ({
   username,
   initialScore = 0,
   tags = [],
+  date,
 }) => {
   const [score, setScore] = useState(initialScore);
   const [userVote, setUserVote] = useState<"up" | "down" | null>(null);
@@ -56,6 +58,7 @@ const Post: React.FC<PostProps> = ({
           </View>
           <Text style={styles.username}>{username}</Text>
         </View>
+        <Text style={styles.dateText}>{new Date(date).toLocaleString()}</Text>
       </View>
 
       <Text style={styles.headline}>{headline}</Text>
@@ -207,6 +210,10 @@ const styles = StyleSheet.create({
   },
   activeDownvoteText: {
     color: "#aa0000",
+  },
+  dateText: {
+    fontSize: 12,
+    color: "#666",
   },
 });
 
