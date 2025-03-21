@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Text, View, FlatList, StyleSheet, TextInput, Button, Keyboard, ScrollView } from 'react-native';
+import { Text, View, FlatList, StyleSheet, TextInput, Button, Keyboard, ScrollView, CheckBox } from 'react-native';
 
 const berlinDoctors = [
   { id: '1', name: 'Telefonseelsorge Deutschland', phone: '0800 111 0111' },
@@ -45,6 +45,7 @@ export default function BetterHelp() {
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
   const [food, setFood] = useState<Food[]>([]);
+  const [isAnonymous, setIsAnonymous] = useState(false);
 
   const handleSearch = () => {
     Keyboard.dismiss(); // Dismiss the keyboard
@@ -118,6 +119,18 @@ export default function BetterHelp() {
               )}
             </>
           )}
+          {(doctors.length > 0 || locations.length > 0 || food.length > 0) && (
+            <View style={styles.separator} />
+          )}
+          <Text style={styles.sectionTitle}>Privacy</Text>
+          <View style={styles.item}>
+            <CheckBox
+              value={isAnonymous}
+              onValueChange={setIsAnonymous}
+            />
+            <Text style={styles.name}>Anonymous</Text>
+          </View>
+          {/* Add more privacy options here */}
         </View>
         {/* <View style={styles.footer}>
           <Text style={styles.footerText}>Footer content here</Text>
@@ -134,7 +147,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
-  },
+  },  
   searchContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -162,6 +175,8 @@ const styles = StyleSheet.create({
   item: {
     padding: 16,
     borderBottomWidth: 0, // Remove the border bottom from individual items
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   name: {
     fontSize: 18,
