@@ -6,6 +6,7 @@ import {
   StyleSheet,
   ScrollView,
 } from "react-native";
+import { AntDesign } from "@expo/vector-icons"; // For verified icon
 
 type PostProps = {
   headline: string;
@@ -13,7 +14,8 @@ type PostProps = {
   username: string;
   initialScore?: number;
   tags?: string[];
-  date: string; // Add the date field
+  date: string; // ISO date string
+  verified?: boolean; // Optional verified flag
 };
 
 const Post: React.FC<PostProps> = ({
@@ -23,6 +25,7 @@ const Post: React.FC<PostProps> = ({
   initialScore = 0,
   tags = [],
   date,
+  verified,
 }) => {
   const [score, setScore] = useState(initialScore);
   const [userVote, setUserVote] = useState<"up" | "down" | null>(null);
@@ -57,6 +60,14 @@ const Post: React.FC<PostProps> = ({
             </Text>
           </View>
           <Text style={styles.username}>{username}</Text>
+          {verified && (
+            <AntDesign
+              name="checkcircle"
+              size={16}
+              color="#007AFF"
+              style={styles.verifiedIcon}
+            />
+          )}
         </View>
         <Text style={styles.dateText}>{new Date(date).toLocaleString()}</Text>
       </View>
@@ -214,6 +225,9 @@ const styles = StyleSheet.create({
   dateText: {
     fontSize: 12,
     color: "#666",
+  },
+  verifiedIcon: {
+    marginLeft: 4,
   },
 });
 

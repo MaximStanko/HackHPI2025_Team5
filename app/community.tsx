@@ -14,7 +14,7 @@ import {
 import Post from "../components/post";
 import { AntDesign } from "@expo/vector-icons"; // Make sure you have expo/vector-icons installed
 
-// Define the type for post items
+// Update the type for post items with an optional verified property
 type PostItem = {
   id: number;
   headline: string;
@@ -23,9 +23,10 @@ type PostItem = {
   initialScore: number;
   tags: string[];
   date: string; // ISO date string
+  verified?: boolean; // Optional verified flag
 };
 
-// Sample data for posts
+// Sample data for posts (here, "johndoe" is verified)
 const POSTS: PostItem[] = [
   {
     id: 1,
@@ -36,6 +37,7 @@ const POSTS: PostItem[] = [
     initialScore: 5,
     tags: ["welcome", "introduction", "community"],
     date: "2023-01-01T12:00:00Z",
+    verified: true, // Mark this user as verified
   },
   {
     id: 2,
@@ -249,6 +251,7 @@ export default function Index() {
               initialScore={post.initialScore}
               tags={post.tags}
               date={post.date}
+              verified={post.verified} // Pass verified flag
             />
           ))
         ) : (
