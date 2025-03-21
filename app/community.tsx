@@ -1,5 +1,5 @@
 import { Text, View, ScrollView } from "react-native";
-import Post from "../app/post";
+import Post from "../components/post";
 
 export default function Index() {
   return (
