@@ -142,7 +142,7 @@ export default function Index() {
       id: allPosts.length + 1, // Simple ID generation
       headline: newPostHeadline.trim(),
       content: newPostContent.trim(),
-      username: "current_user", // Would come from authentication in a real app
+      username: "admin", // Would come from authentication in a real app
       initialScore: 0,
       tags: tagList,
       date: new Date().toISOString(), // Add the current date as ISO string
