@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Text, View, FlatList, StyleSheet, TextInput, Button, Keyboard } from 'react-native';
+import { Text, View, FlatList, StyleSheet, TextInput, Button, Keyboard, ScrollView } from 'react-native';
 
 const berlinDoctors = [
   { id: '1', name: 'Telefonseelsorge Deutschland', phone: '0800 111 0111' },
@@ -60,72 +60,77 @@ export default function BetterHelp() {
   };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.searchContainer}>
-        <TextInput
-          style={styles.input}
-          placeholder="Enter city name"
-          value={city}
-          onChangeText={setCity}
-        />
-        <Button title="Search" onPress={handleSearch} />
+    <ScrollView contentContainerStyle={styles.scrollContainer}>
+      <View style={styles.container}>
+        <View style={styles.searchContainer}>
+          <TextInput
+            style={styles.input}
+            placeholder="Enter city name"
+            value={city}
+            onChangeText={setCity}
+          />
+          <Button title="Search" onPress={handleSearch} />
+        </View>
+        <View style={styles.listContainer}>
+          {doctors.length > 0 && (
+            <>
+              <Text style={styles.sectionTitle}>Hotlines</Text>
+              {doctors.map((doctor) => (
+                <View key={doctor.id} style={styles.item}>
+                  <Text style={styles.name}>{doctor.name}</Text>
+                  <Text style={styles.phone}>{doctor.phone}</Text>
+                </View>
+              ))}
+              {doctors.length === 0 && (
+                <Text style={styles.noResults}>No doctors found</Text>
+              )}
+            </>
+          )}
+          {doctors.length > 0 && locations.length > 0 && (
+            <View style={styles.separator} />
+          )}
+          {locations.length > 0 && (
+            <>
+              <Text style={styles.sectionTitle}>Websites</Text>
+              {locations.map((location) => (
+                <View key={location.id} style={styles.item}>
+                  <Text style={styles.name}>{location.name}</Text>
+                </View>
+              ))}
+              {locations.length === 0 && (
+                <Text style={styles.noResults}>No locations found</Text>
+              )}
+            </>
+          )}
+          {locations.length > 0 && food.length > 0 && (
+            <View style={styles.separator} />
+          )}
+          {food.length > 0 && (
+            <>
+              <Text style={styles.sectionTitle}>Food</Text>
+              {food.map((foodItem) => (
+                <View key={foodItem.id} style={styles.item}>
+                  <Text style={styles.name}>{foodItem.name}</Text>
+                </View>
+              ))}
+              {food.length === 0 && (
+                <Text style={styles.noResults}>No food items found</Text>
+              )}
+            </>
+          )}
+        </View>
+        {/* <View style={styles.footer}>
+          <Text style={styles.footerText}>Footer content here</Text>
+        </View> */}
       </View>
-      <View style={styles.listContainer}>
-        {doctors.length > 0 && (
-          <>
-            <Text style={styles.sectionTitle}>Hotlines</Text>
-            <FlatList
-              data={doctors}
-              keyExtractor={(item) => item.id}
-              renderItem={({ item }) => (
-                <View style={styles.item}>
-                  <Text style={styles.name}>{item.name}</Text>
-                  <Text style={styles.phone}>{item.phone}</Text>
-                </View>
-              )}
-              ListEmptyComponent={<Text style={styles.noResults}>No doctors found</Text>}
-            />
-          </>
-        )}
-        {locations.length > 0 && (
-          <>
-            <Text style={styles.sectionTitle}>Locations</Text>
-            <FlatList
-              data={locations}
-              keyExtractor={(item) => item.id}
-              renderItem={({ item }) => (
-                <View style={styles.item}>
-                  <Text style={styles.name}>{item.name}</Text>
-                </View>
-              )}
-              ListEmptyComponent={<Text style={styles.noResults}>No locations found</Text>}
-            />
-          </>
-        )}
-        {food.length > 0 && (
-          <>
-            <Text style={styles.sectionTitle}>Food</Text>
-            <FlatList
-              data={food}
-              keyExtractor={(item) => item.id}
-              renderItem={({ item }) => (
-                <View style={styles.item}>
-                  <Text style={styles.name}>{item.name}</Text>
-                </View>
-              )}
-              ListEmptyComponent={<Text style={styles.noResults}>No food items found</Text>}
-            />
-          </>
-        )}
-      </View>
-      {/* <View style={styles.footer}>
-        <Text style={styles.footerText}>Footer content here</Text>
-      </View> */}
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
+  scrollContainer: {
+    flexGrow: 1,
+  },
   container: {
     flex: 1,
     backgroundColor: '#fff',
@@ -156,8 +161,7 @@ const styles = StyleSheet.create({
   },
   item: {
     padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#ccc',
+    borderBottomWidth: 0, // Remove the border bottom from individual items
   },
   name: {
     fontSize: 18,
@@ -182,5 +186,10 @@ const styles = StyleSheet.create({
   footerText: {
     fontSize: 16,
     color: '#555',
+  },
+  separator: {
+    height: 2, // Make the separator lines more distinct
+    backgroundColor: '#888', // Darker color for better visibility
+    marginVertical: 16,
   },
 });
