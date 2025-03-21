@@ -1,21 +1,37 @@
 import React, { useState } from 'react';
 import { Text, View, FlatList, StyleSheet, TextInput, Button, Keyboard } from 'react-native';
 
-const berlinDoctors = [
+interface Doctor {
+  id: string;
+  name: string;
+  phone: string;
+}
+
+interface Location {
+  id: string;
+  name: string;
+}
+
+interface Food {
+  id: string;
+  name: string;
+}
+
+const berlinDoctors: Doctor[] = [
   { id: '1', name: 'Dr. John Doe', phone: '123-456-7890' },
   { id: '2', name: 'Dr. Jane Smith', phone: '987-654-3210' },
   { id: '3', name: 'Dr. Emily Johnson', phone: '555-123-4567' },
   // Add more doctors as needed
 ];
 
-const berlinLocations = [
+const berlinLocations: Location[] = [
   { id: '1', name: 'Brandenburg Gate' },
   { id: '2', name: 'Berlin Wall' },
   { id: '3', name: 'Museum Island' },
   // Add more locations as needed
 ];
 
-const berlinFood = [
+const berlinFood: Food[] = [
   { id: '1', name: 'Currywurst' },
   { id: '2', name: 'Berliner' },
   { id: '3', name: 'Pretzel' },
@@ -24,9 +40,9 @@ const berlinFood = [
 
 export default function BetterHelp() {
   const [city, setCity] = useState('');
-  const [doctors, setDoctors] = useState([]);
-  const [locations, setLocations] = useState([]);
-  const [food, setFood] = useState([]);
+  const [doctors, setDoctors] = useState<Doctor[]>([]);
+  const [locations, setLocations] = useState<Location[]>([]);
+  const [food, setFood] = useState<Food[]>([]);
 
   const handleSearch = () => {
     Keyboard.dismiss(); // Dismiss the keyboard

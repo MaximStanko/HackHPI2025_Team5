@@ -1,6 +1,7 @@
 import { Tabs } from 'expo-router';
 import React from 'react';
 import { Platform } from 'react-native';
+import { NavigationContainer } from '@react-navigation/native';
 
 import { HapticTab } from '@/components/HapticTab';
 import { IconSymbol } from '@/components/ui/IconSymbol';
@@ -12,7 +13,10 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
 import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
 
-export default function TabLayout() {
+import { AuthProvider, useAuth } from './AuthContext';
+import LoginScreen from './login';
+
+function TabLayout() {
   const colorScheme = useColorScheme();
 
   return (
@@ -31,7 +35,7 @@ export default function TabLayout() {
         }),
       }}>
       <Tabs.Screen
-        name="index"
+        name="questionnaire"
         options={{
           title: 'Questionnaire',
           tabBarIcon: ({ color }) => <FontAwesome5 name="clipboard-list" size={28} color={color} />,
@@ -48,16 +52,34 @@ export default function TabLayout() {
         name="settings"
         options={{
           title: 'Settings',
-          tabBarIcon: ({ color }) => <Ionicons name="settings-sharp" size={28} color={color} />, //<IconSymbol size={28} name="chevron.right" color={color} />,
+          tabBarIcon: ({ color }) => <Ionicons name="settings-sharp" size={28} color={color} />,
         }}
       />
       <Tabs.Screen
         name="betterhelp"
         options={{
           title: 'Betterhelp',
-          tabBarIcon: ({ color }) => <FontAwesome5 name="bed" size={28} color={color} />, //<IconSymbol size={28} name="chevron.right" color={color} />,
+          tabBarIcon: ({ color }) => <FontAwesome5 name="bed" size={28} color={color} />,
         }}
       />
     </Tabs>
+  );
+}
+
+function App() {
+  const { isAuthenticated } = useAuth();
+
+  return (
+    <NavigationContainer>
+      {isAuthenticated ? <TabLayout /> : <LoginScreen />}
+    </NavigationContainer>
+  );
+}
+
+export default function Root() {
+  return (
+    <AuthProvider>
+      <App />
+    </AuthProvider>
   );
 }
