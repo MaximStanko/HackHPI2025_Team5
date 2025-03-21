@@ -30,6 +30,60 @@ const POSTS = [
     ],
   },
   {
+    id: 4,
+    headline: "Welcome to our community!",
+    content:
+      "This is an example post to demonstrate the Post component. It includes upvote and downvote functionality.",
+    username: "johndoe",
+    initialScore: 5,
+    tags: [
+      "welcome",
+      "introduction",
+      "community",
+      "example",
+      "demo",
+      "post",
+      "upvote",
+      "downvote",
+    ],
+  },
+  {
+    id: 5,
+    headline: "Welcome to our community!",
+    content:
+      "This is an example post to demonstrate the Post component. It includes upvote and downvote functionality.",
+    username: "johndoe",
+    initialScore: 5,
+    tags: [
+      "welcome",
+      "introduction",
+      "community",
+      "example",
+      "demo",
+      "post",
+      "upvote",
+      "downvote",
+    ],
+  },
+  {
+    id: 6,
+    headline: "Welcome to our community!",
+    content:
+      "This is an example post to demonstrate the Post component. It includes upvote and downvote functionality.",
+    username: "johndoe",
+    initialScore: 5,
+    tags: [
+      "welcome",
+      "introduction",
+      "community",
+      "example",
+      "demo",
+      "post",
+      "upvote",
+      "downvote",
+    ],
+  },
+  {
     id: 2,
     headline: "Check out this cool feature",
     content:
@@ -97,7 +151,7 @@ export default function Index() {
   }, [selectedTags, searchText]);
 
   return (
-    <View style={{ flex: 1 }}>
+    <View style={{ flex: 1, justifyContent: "flex-start" }}>
       <View style={styles.searchContainer}>
         <TextInput
           style={styles.searchInput}
@@ -142,33 +196,35 @@ export default function Index() {
         ))}
       </ScrollView>
 
-      <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
-        <View style={{ paddingVertical: 16 }}>
-          {filteredPosts.length > 0 ? (
-            filteredPosts.map((post) => (
-              <Post
-                key={post.id}
-                headline={post.headline}
-                content={post.content}
-                username={post.username}
-                initialScore={post.initialScore}
-                tags={post.tags}
-              />
-            ))
-          ) : (
-            <View style={styles.noResultsContainer}>
-              <Text style={styles.noResultsText}>
-                No posts found. Try a different search or tag combination.
-              </Text>
-            </View>
-          )}
-        </View>
+      <ScrollView
+        contentContainerStyle={{
+          // Remove flexGrow and justifyContent altogether
+          paddingBottom: 16, // Move padding here instead
+          justifyContent: "flex-start",
+        }}
+      >
+        {filteredPosts.length > 0 ? (
+          filteredPosts.map((post) => (
+            <Post
+              key={post.id}
+              headline={post.headline}
+              content={post.content}
+              username={post.username}
+              initialScore={post.initialScore}
+              tags={post.tags}
+            />
+          ))
+        ) : (
+          <View style={styles.noResultsContainer}>
+            <Text style={styles.noResultsText}>
+              No posts found. Try a different search or tag combination.
+            </Text>
+          </View>
+        )}
       </ScrollView>
     </View>
   );
 }
-// ...existing code...
-// ...existing code...
 
 const styles = StyleSheet.create({
   searchContainer: {
@@ -201,7 +257,8 @@ const styles = StyleSheet.create({
   },
   tagFilterContainer: {
     paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingTop: 8,
+    paddingBottom: 16, // Increased bottom padding
   },
   tagFilter: {
     backgroundColor: "#f0f0f0",
