@@ -9,7 +9,7 @@ export default function Index() {
         alignItems: "center",
       }}
     >
-      <Text>questionnaire</Text>
+      <Text>community</Text>
     </View>
   );
 }
