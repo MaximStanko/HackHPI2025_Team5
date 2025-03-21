@@ -51,6 +51,13 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => <Ionicons name="settings-sharp" size={28} color={color} />, //<IconSymbol size={28} name="chevron.right" color={color} />,
         }}
       />
+      <Tabs.Screen
+        name="betterhelp"
+        options={{
+          title: 'Betterhelp',
+          tabBarIcon: ({ color }) => <FontAwesome5 name="bed" size={28} color={color} />, //<IconSymbol size={28} name="chevron.right" color={color} />,
+        }}
+      />
     </Tabs>
   );
 }
