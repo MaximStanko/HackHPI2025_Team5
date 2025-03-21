@@ -1,11 +1,18 @@
 import React, { useState } from "react";
-import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  ScrollView,
+} from "react-native";
 
 type PostProps = {
   headline: string;
   content: string;
   username: string;
   initialScore?: number;
+  tags?: string[];
 };
 
 const Post: React.FC<PostProps> = ({
@@ -13,6 +20,7 @@ const Post: React.FC<PostProps> = ({
   content,
   username,
   initialScore = 0,
+  tags = [],
 }) => {
   const [score, setScore] = useState(initialScore);
   const [userVote, setUserVote] = useState<"up" | "down" | null>(null);
@@ -52,6 +60,20 @@ const Post: React.FC<PostProps> = ({
 
       <Text style={styles.headline}>{headline}</Text>
       <Text style={styles.content}>{content}</Text>
+
+      {tags.length > 0 && (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.tagScrollView}
+        >
+          {tags.map((tag, index) => (
+            <View key={index} style={styles.tagContainer}>
+              <Text style={styles.tagText}>#{tag}</Text>
+            </View>
+          ))}
+        </ScrollView>
+      )}
 
       <View style={styles.voteContainer}>
         <TouchableOpacity
@@ -138,8 +160,23 @@ const styles = StyleSheet.create({
   },
   content: {
     fontSize: 16,
-    marginBottom: 16,
+    marginBottom: 12,
     lineHeight: 22,
+  },
+  tagScrollView: {
+    flexDirection: "row",
+    marginBottom: 12,
+  },
+  tagContainer: {
+    backgroundColor: "#f0f0f0",
+    borderRadius: 16,
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    marginRight: 8,
+  },
+  tagText: {
+    fontSize: 12,
+    color: "#555",
   },
   voteContainer: {
     flexDirection: "row",
