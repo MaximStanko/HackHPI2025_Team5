@@ -12,11 +12,18 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
 import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
 
+type Doctor = {
+  id: string;
+  name: string;
+  phone: string;
+};
+
 export default function TabLayout() {
   const colorScheme = useColorScheme();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [berlinDoctors, setBerlinDoctors] = useState<Doctor[]>([]);
 
   const handleLogin = () => {
     if (username === 'admin') {
