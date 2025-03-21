@@ -1,11 +1,23 @@
 // db/database.ts
-import * as SQLite from 'expo-sqlite';
+import { Platform } from "react-native";
 
-let db: SQLite.SQLiteDatabase;
+let SQLite: any;
+if (Platform.OS === "web") {
+  // Provide a fallback (or throw an error) if running on web.
+  SQLite = {
+    openDatabase: () => {
+      throw new Error("SQLite not available on web");
+    },
+  };
+} else {
+  SQLite = require("expo-sqlite");
+}
+
+let db: any;
 
 export async function getDatabase() {
   if (!db) {
-    db = await SQLite.openDatabaseAsync('app.db');
+    db = await SQLite.openDatabaseAsync("app.db");
   }
   return db;
 }
