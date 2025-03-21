@@ -8,7 +8,7 @@ import {
 } from "react-native";
 import { AntDesign } from "@expo/vector-icons"; // For verified icon
 
-type PostProps = {
+export type PostProps = {
   headline: string;
   content: string;
   username: string;
@@ -16,6 +16,8 @@ type PostProps = {
   tags?: string[];
   date: string; // ISO date string
   verified?: boolean; // Optional verified flag
+  doctorIcon?: boolean; // new prop for rendering a doctor icon
+  serious?: boolean; // new prop for applying a serious style
 };
 
 const Post: React.FC<PostProps> = ({
@@ -26,6 +28,8 @@ const Post: React.FC<PostProps> = ({
   tags = [],
   date,
   verified,
+  doctorIcon,
+  serious,
 }) => {
   const [score, setScore] = useState(initialScore);
   const [userVote, setUserVote] = useState<"up" | "down" | null>(null);
@@ -51,7 +55,12 @@ const Post: React.FC<PostProps> = ({
   };
 
   return (
-    <View style={styles.container}>
+    <View
+      style={[
+        styles.container,
+        { backgroundColor: serious ? "#ebf9fa" : "#e7fdea" },
+      ]}
+    >
       <View style={styles.header}>
         <View style={styles.userInfo}>
           <View style={styles.avatarPlaceholder}>
@@ -72,7 +81,12 @@ const Post: React.FC<PostProps> = ({
         <Text style={styles.dateText}>{new Date(date).toLocaleString()}</Text>
       </View>
 
-      <Text style={styles.headline}>{headline}</Text>
+      <Text style={styles.headline}>
+        {headline}{" "}
+        {doctorIcon && (
+          <AntDesign name="medicinebox" size={16} color="#007AFF" />
+        )}
+      </Text>
       <Text style={styles.content}>{content}</Text>
 
       {tags.length > 0 && (
