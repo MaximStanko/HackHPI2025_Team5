@@ -22,6 +22,7 @@ type PostItem = {
   username: string;
   initialScore: number;
   tags: string[];
+  date: string; // ISO date string
 };
 
 // Sample data for posts
@@ -34,6 +35,7 @@ const POSTS: PostItem[] = [
     username: "johndoe",
     initialScore: 5,
     tags: ["welcome", "introduction", "community"],
+    date: "2023-01-01T12:00:00Z",
   },
   {
     id: 2,
@@ -43,6 +45,7 @@ const POSTS: PostItem[] = [
     username: "jane_smith",
     initialScore: 12,
     tags: ["feature", "update", "technology"],
+    date: "2023-01-02T12:00:00Z",
   },
   {
     id: 3,
@@ -52,6 +55,7 @@ const POSTS: PostItem[] = [
     username: "tech_guru",
     initialScore: 8,
     tags: ["event", "technology", "meetup"],
+    date: "2023-01-03T12:00:00Z",
   },
 ];
 
@@ -122,7 +126,6 @@ export default function Index() {
       Alert.alert("Error", "Please enter a headline for your post");
       return;
     }
-
     if (!newPostContent.trim()) {
       Alert.alert("Error", "Please enter content for your post");
       return;
@@ -134,14 +137,15 @@ export default function Index() {
       .map((tag) => tag.trim().toLowerCase())
       .filter((tag) => tag.length > 0);
 
-    // Create new post object
-    const newPost = {
+    // Create new post object with the current date
+    const newPost: PostItem = {
       id: allPosts.length + 1, // Simple ID generation
       headline: newPostHeadline.trim(),
       content: newPostContent.trim(),
-      username: "current_user", // Would come from authentication in a real app
+      username: "admin", // Would come from authentication in a real app
       initialScore: 0,
       tags: tagList,
+      date: new Date().toISOString(), // Add the current date as ISO string
     };
 
     // Add to posts list
@@ -152,9 +156,9 @@ export default function Index() {
     const uniqueTags = Array.from(
       new Set(updatedPosts.flatMap((post) => post.tags))
     );
+    setAllTags(uniqueTags);
     setSelectedTags([]); // Clear selected tags if needed
     setFilteredPosts(updatedPosts); // Update filtered posts
-    setAllTags(uniqueTags);
 
     // Close modal
     closeCreatePostModal();
@@ -244,6 +248,7 @@ export default function Index() {
               username={post.username}
               initialScore={post.initialScore}
               tags={post.tags}
+              date={post.date}
             />
           ))
         ) : (
@@ -470,5 +475,10 @@ const styles = StyleSheet.create({
     color: "white",
     fontSize: 16,
     fontWeight: "500",
+  },
+  dateText: {
+    fontSize: 12,
+    color: "#888",
+    marginBottom: 8,
   },
 });
