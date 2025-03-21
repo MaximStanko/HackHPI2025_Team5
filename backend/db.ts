@@ -30,7 +30,8 @@ export async function initializeDatabase() {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       tinitososid INTEGER NOT NULL,
       postid INTEGER NOT NULL,
-      vote INTEGER NOT NULL
+      vote INTEGER NOT NULL,
+      UNIQUE(tinitososid, postid)
     );
 
     CREATE TABLE IF NOT EXISTS Post(
@@ -88,7 +89,8 @@ export async function getTinitosos() {
 // Add a new Vote
 export async function addVote(tinitososid: number, postid: number, vote: number) {
   return db.runAsync(
-    `INSERT INTO Vote (tinitososid, postid, vote) VALUES (?, ?, ?)`,
+    `INSERT INTO Vote (tinitososid, postid, vote) VALUES (?, ?, ?)
+     ON CONFLICT(tinitososid, postid) DO UPDATE SET vote = excluded.vote`,
     [tinitososid, postid, vote]
   );
 }
