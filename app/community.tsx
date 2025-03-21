@@ -190,7 +190,9 @@ export default function Index() {
   }, [selectedTags, searchText, allPosts]);
 
   return (
-    <View style={{ flex: 1, justifyContent: "flex-start" }}>
+    <View
+      style={{ flex: 1, justifyContent: "flex-start", backgroundColor: "#fff" }}
+    >
       <View style={styles.searchContainer}>
         <TextInput
           style={styles.searchInput}
