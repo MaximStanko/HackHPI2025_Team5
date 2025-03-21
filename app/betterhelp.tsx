@@ -11,9 +11,9 @@ const berlinDoctors = [
 ];
 
 const berlinLocations = [
-  { id: '1', name: 'Brandenburg Gate' },
-  { id: '2', name: 'Berlin Wall' },
-  { id: '3', name: 'Museum Island' },
+  { id: '1', name: 'https://krisenchat.de/  ' },
+  { id: '2', name: 'https://tinnitus-care.berlin/ ' },
+  { id: '3', name: 'https://tinnituszentrum.charite.de/ ' },
   // Add more locations as needed
 ];
 
