@@ -24,7 +24,7 @@ export default function QuestionnaireScreen() {
   // questionnaire
   const questions = [
     { key: 'age', text: 'Enter your Age:', type: 'input', keyboardType: 'numeric' },
-    { key: 'gender', text: 'Gender:', type: 'picker', options: ['Male', 'Female', 'Kirby', 'Other'] },
+    { key: 'gender', text: 'Gender:', type: 'picker', options: ['Male', 'Female', 'Other'] },
     { key: 'duration', text: 'Duration: How long have you had tinnitus?', type: 'input' },
     { key: 'loudness', text: 'Loudness: How loud is your tinnitus?', type: 'picker', options: ['Soft', 'Moderate', 'Loud'] },
     { key: 'perception', text: 'Where do you perceive your tinnitus?', type: 'picker', options: ['left ear', 'right ear', 'both ears, worse in left', 'both ears, worse in right', 'both ears', 'inside the head'] },
