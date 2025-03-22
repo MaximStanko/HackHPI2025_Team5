@@ -271,7 +271,7 @@ export default function LocalHelpScreen() {
   return (
     <SafeAreaView style={themeStyles.container}>
       <View style={themeStyles.header}>
-        <Text style={themeStyles.title}>Local Tinnitus Help</Text>
+        <Text style={themeStyles.title}>LocalHelp</Text>
         
         <TouchableOpacity 
           style={themeStyles.sortButton}

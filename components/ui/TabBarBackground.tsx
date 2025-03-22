@@ -6,7 +6,7 @@ type TabBarBackgroundProps = {
   isDarkMode?: boolean;
 };
 
-export default function TabBarBackground({ isDarkMode = false }: TabBarBackgroundProps) {
+export default function TabBarBackground({ isDarkMode = true }: TabBarBackgroundProps) {
   if (Platform.OS === 'ios') {
     return (
       <BlurView

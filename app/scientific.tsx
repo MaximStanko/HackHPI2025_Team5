@@ -289,7 +289,7 @@ export default function ScientificScreen() {
   return (
     <SafeAreaView style={themeStyles.container}>
       <View style={themeStyles.header}>
-        <Text style={themeStyles.title}>Scientific Research</Text>
+        <Text style={themeStyles.title}>News</Text>
         
         <TouchableOpacity 
           style={themeStyles.sortButton}

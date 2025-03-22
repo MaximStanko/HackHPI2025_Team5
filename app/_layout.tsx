@@ -109,7 +109,7 @@ export default function TabLayout() {
     loadDarkModeSetting();
     
     // Set up interval to check for dark mode changes
-    const intervalId = setInterval(loadDarkModeSetting, 1000);
+    const intervalId = setInterval(loadDarkModeSetting, 1);
     
     // Clean up interval on component unmount
     return () => clearInterval(intervalId);
