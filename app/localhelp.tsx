@@ -1,21 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Text, View, FlatList, StyleSheet, TextInput, Button, Keyboard, ScrollView } from 'react-native';
+import React, { useState } from 'react';
+import { Text, View, FlatList, StyleSheet, TextInput, Button, Keyboard, ScrollView, SafeAreaView } from 'react-native';
+import { Colors } from './theme.js';
 
 const berlinDoctors = [
   { id: '1', name: 'Telefonseelsorge Deutschland', phone: '0800 111 0111' },
   { id: '2', name: 'Deutsche Tinnitus-Liga e.V.', phone: '0202 24652-0' },
   { id: '3', name: 'Nummer gegen Kummer (Youth)', phone: '116 111' },
-  { id: '3', name: 'Nummer gegen Kummer (Parents)', phone: '0800 111 0550' },
-
-  // Add more doctors as needed
+  { id: '4', name: 'Nummer gegen Kummer (Parents)', phone: '0800 111 0550' },
 ];
 
 const berlinLocations = [
-  { id: '1', name: 'https://krisenchat.de/  ' },
-  { id: '2', name: 'https://tinnitus-care.berlin/ ' },
-  { id: '3', name: 'https://tinnituszentrum.charite.de/ ' },
-  // Add more locations as needed
+  { id: '1', name: 'https://krisenchat.de/' },
+  { id: '2', name: 'https://tinnitus-care.berlin/' },
+  { id: '3', name: 'https://tinnituszentrum.charite.de/' },
 ];
 
 const berlinFood = [
@@ -41,7 +41,7 @@ type Food = {
   name: string;
 };
 
-export default function BetterHelp() {
+export default function LocalHelp() {
   const [city, setCity] = useState('');
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
@@ -81,73 +81,78 @@ export default function BetterHelp() {
   const themeStyles = isDarkMode ? darkStyles : lightStyles;
 
   return (
-    <ScrollView contentContainerStyle={themeStyles.scrollContainer}>
-      <View style={themeStyles.container}>
-        <View style={themeStyles.searchContainer}>
-          <TextInput
-            style={themeStyles.input}
-            placeholder="Enter city name"
-            value={city}
-            onChangeText={setCity}
-          />
-          <Button title="Search" onPress={handleSearch} />
-        </View>
-        <View style={themeStyles.listContainer}>
-          {doctors.length > 0 && (
-            <>
-              <Text style={themeStyles.sectionTitle}>Hotlines</Text>
-              {doctors.map((doctor) => (
-                <View key={doctor.id} style={themeStyles.item}>
-                  <Text style={themeStyles.name}>{doctor.name}</Text>
-                  <Text style={themeStyles.phone}>{doctor.phone}</Text>
-                </View>
-              ))}
-              {doctors.length === 0 && (
-                <Text style={themeStyles.noResults}>No doctors found</Text>
-              )}
-            </>
-          )}
-          {doctors.length > 0 && locations.length > 0 && (
-            <View style={themeStyles.separator} />
-          )}
-          {locations.length > 0 && (
-            <>
-              <Text style={themeStyles.sectionTitle}>Websites</Text>
-              {locations.map((location) => (
-                <View key={location.id} style={themeStyles.item}>
-                  <Text style={themeStyles.name}>{location.name}</Text>
-                </View>
-              ))}
-              {locations.length === 0 && (
-                <Text style={themeStyles.noResults}>No locations found</Text>
-              )}
-            </>
-          )}
-          {locations.length > 0 && food.length > 0 && (
-            <View style={themeStyles.separator} />
-          )}
-          {food.length > 0 && (
-            <>
-              <Text style={themeStyles.sectionTitle}>Food</Text>
-              {food.map((foodItem) => (
-                <View key={foodItem.id} style={themeStyles.item}>
-                  <Text style={themeStyles.name}>{foodItem.name}</Text>
-                </View>
-              ))}
-              {food.length === 0 && (
-                <Text style={themeStyles.noResults}>No food items found</Text>
-              )}
-            </>
-          )}
-          {(doctors.length > 0 || locations.length > 0 || food.length > 0) && (
-            <View style={themeStyles.separator} />
-          )}
-        </View>
-        {/* <View style={styles.footer}>
-          <Text style={styles.footerText}>Footer content here</Text>
-        </View> */}
+    <SafeAreaView style={themeStyles.mainContainer}>
+      <View style={themeStyles.header}>
+        <Text style={themeStyles.title}>LocalHelp</Text>
       </View>
-    </ScrollView>
+      <ScrollView contentContainerStyle={themeStyles.scrollContainer}>
+        <View style={themeStyles.container}>
+          <View style={themeStyles.searchContainer}>
+            <Text style={themeStyles.explanationText}>
+              Enter the name of a city to find relevant hotlines, websites, and food items.
+            </Text>
+            <TextInput
+              style={themeStyles.input}
+              placeholder="Enter city name"
+              value={city}
+              onChangeText={setCity}
+            />
+            <Button title="Search" onPress={handleSearch} />
+          </View>
+          <View style={themeStyles.listContainer}>
+            {doctors.length > 0 && (
+              <>
+                <Text style={themeStyles.sectionTitle}>Hotlines</Text>
+                {doctors.map((doctor) => (
+                  <View key={doctor.id} style={themeStyles.item}>
+                    <Text style={themeStyles.name}>{doctor.name}</Text>
+                    <Text style={themeStyles.phone}>{doctor.phone}</Text>
+                  </View>
+                ))}
+                {doctors.length === 0 && (
+                  <Text style={themeStyles.noResults}>No hotlines found</Text>
+                )}
+              </>
+            )}
+            {doctors.length > 0 && locations.length > 0 && (
+              <View style={themeStyles.separator} />
+            )}
+            {locations.length > 0 && (
+              <>
+                <Text style={themeStyles.sectionTitle}>Websites</Text>
+                {locations.map((location) => (
+                  <View key={location.id} style={themeStyles.item}>
+                    <Text style={themeStyles.name}>{location.name}</Text>
+                  </View>
+                ))}
+                {locations.length === 0 && (
+                  <Text style={themeStyles.noResults}>No websites found</Text>
+                )}
+              </>
+            )}
+            {locations.length > 0 && food.length > 0 && (
+              <View style={themeStyles.separator} />
+            )}
+            {food.length > 0 && (
+              <>
+                <Text style={themeStyles.sectionTitle}>Food</Text>
+                {food.map((foodItem) => (
+                  <View key={foodItem.id} style={themeStyles.item}>
+                    <Text style={themeStyles.name}>{foodItem.name}</Text>
+                  </View>
+                ))}
+                {food.length === 0 && (
+                  <Text style={themeStyles.noResults}>No food items found</Text>
+                )}
+              </>
+            )}
+            {(doctors.length > 0 || locations.length > 0 || food.length > 0) && (
+              <View style={themeStyles.separator} />
+            )}
+          </View>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
@@ -181,4 +186,3 @@ const darkStyles = StyleSheet.create({
   sectionTitle: { fontSize: 20, fontWeight: 'bold', marginTop: 16, marginBottom: 8 },
   footerText: { fontSize: 16, color: '#fff' },
   separator: { height: 2, backgroundColor: '#1E1E1E', marginVertical: 16 }
-});

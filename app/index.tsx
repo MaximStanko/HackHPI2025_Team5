@@ -2,8 +2,28 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { supabase } from '../lib/supabase'
+import Auth from '../components/Auth'
+import Account from '../components/Account'
+import { Session } from '@supabase/supabase-js'
+import { Colors } from './theme.js';
+
 
 export default function QuestionnaireScreen() {
+  // supabase
+  const [session, setSession] = useState<Session | null>(null)
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session)
+    })
+
+    supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session)
+    })
+  }, [])
+
+  // questionnaire
   const questions = [
     { key: 'age', text: 'Enter your Age:', type: 'input', keyboardType: 'numeric' },
     { key: 'gender', text: 'Gender:', type: 'picker', options: ['Male', 'Female', 'Kirby', 'Other'] },
@@ -13,7 +33,7 @@ export default function QuestionnaireScreen() {
     { key: 'pitch', text: 'Please describe the pitch of your tinnitus?', type: 'picker', options: ['very high frequency', 'high frequency', 'medium frequency', 'low frequency'] },
     { key: 'psychological treatment', text: 'Are you currently under treatment for psychiatric problems?', type: 'picker', options: ['Yes', 'No'] },
     { key: 'dizziness', text: 'Do you suffer from dizziness or vertigo?', type: 'picker', options: ['Yes', 'No'] },
-    { key: 'submitted', text: 'Thank you for filling out the questionnaire.', type: 'submitted'},
+    { key: 'submitted', text: 'Your information has been saved.', type: 'submitted'},
   ];
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);

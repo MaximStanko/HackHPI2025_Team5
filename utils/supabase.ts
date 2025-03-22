@@ -14,73 +14,124 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   },
 });
 
-// Custom plain text login/registration
-export const createOrLoginUser = async (email: string, password: string) => {
+// Simplified authentication with no validation
+export const signInWithEmail = async (email: string, password: string) => {
   try {
-    // Check if user exists
-    const { data: existingUsers, error: findError } = await supabase
+    // Direct database check for matching email and password
+    const { data: users, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('email', email)
+      .eq('password', password);
+    
+    if (error) throw error;
+    
+    if (users && users.length > 0) {
+      // Found matching user, create session
+      const user = users[0];
+      
+      // Ensure user has settings
+      await ensureUserSettingsExist(user.id);
+      
+      // Return a session-like structure with user info
+      return { 
+        data: {
+          session: {
+            user: {
+              id: user.id,
+              email: user.email
+            }
+          },
+          user: {
+            id: user.id,
+            email: user.email
+          }
+        }, 
+        error: null 
+      };
+    } else {
+      // No match found
+      throw new Error('Invalid email or password');
+    }
+  } catch (error) {
+    console.error('Sign in error:', error);
+    return { data: null, error };
+  }
+};
+
+export const signUpWithEmail = async (email: string, password: string) => {
+  try {
+    // Check if user already exists
+    const { data: existingUsers } = await supabase
       .from('users')
       .select('*')
       .eq('email', email);
-      
-    if (findError) throw findError;
     
-    // If user exists, check password
     if (existingUsers && existingUsers.length > 0) {
-      const user = existingUsers[0];
-      
-      if (user.password === password) {
-        // Create a mock session
-        return {
-          data: {
-            session: {
-              user: {
-                id: user.id,
-                email: user.email
-              }
-            }
-          },
-          error: null
-        };
-      } else {
-        throw new Error('Incorrect password');
-      }
+      throw new Error('User with this email already exists');
     }
     
-    // If user doesn't exist, create one
-    const { data: newUser, error: createError } = await supabase
+    // Create new user directly in database
+    const { data: newUser, error } = await supabase
       .from('users')
       .insert({ email, password })
       .select()
       .single();
-      
-    if (createError) throw createError;
     
-    // Create default settings for new user
-    await supabase
-      .from('user_settings')
-      .insert({
-        user_id: newUser.id,
-        tinnitus_level: 0,
-        dark_mode: true,
-        notifications_enabled: true
-      });
-      
-    // Return mock session
-    return {
+    if (error) throw error;
+    
+    // Create default settings
+    await createDefaultSettings(newUser.id);
+    
+    // Return session-like structure
+    return { 
       data: {
         session: {
           user: {
             id: newUser.id,
             email: newUser.email
           }
+        },
+        user: {
+          id: newUser.id,
+          email: newUser.email
         }
-      },
-      error: null
+      }, 
+      error: null 
     };
   } catch (error) {
-    console.error('Auth error:', error);
+    console.error('Sign up error:', error);
     return { data: null, error };
+  }
+};
+
+export const signInAsGuest = async () => {
+  try {
+    // Generate a random email and password for guest
+    const timestamp = Date.now();
+    const random = Math.floor(Math.random() * 10000);
+    const email = `guest_${timestamp}_${random}@tinnitus-guest.com`;
+    const password = `guest${random}`;
+    
+    // Create guest account directly in the database
+    const { data, error } = await signUpWithEmail(email, password);
+    if (error) throw error;
+    
+    return { data, error: null };
+  } catch (error) {
+    console.error('Guest sign in error:', error);
+    return { data: null, error };
+  }
+};
+
+export const signOut = async () => {
+  try {
+    const { error } = await supabase.auth.signOut();
+    if (error) throw error;
+    return { error: null };
+  } catch (error) {
+    console.error('Sign out error:', error);
+    return { error };
   }
 };
 
@@ -186,9 +237,10 @@ const createDefaultSettings = async (userId: string) => {
   return data || settings;
 };
 
-// Updated Post-related functions
+// Updated getAllPosts with better error handling
 export const getAllPosts = async (sortBy = 'newest') => {
   try {
+    console.log("Getting all posts with sort:", sortBy);
     let query = supabase
       .from('posts')
       .select(`
@@ -211,13 +263,17 @@ export const getAllPosts = async (sortBy = 'newest') => {
     } else if (sortBy === 'most_votes') {
       query = query.order('upvotes', { ascending: false });
     } else if (sortBy === 'controversial') {
-      // Sort by posts with closest upvote/downvote ratio to 1 (but with significant votes)
       query = query.order('upvotes', { ascending: false }).order('downvotes', { ascending: false });
     }
     
-    const { data, error } = await query;
-      
-    if (error) throw error;
+    const { data, error, status } = await query;
+    
+    if (error) {
+      console.error("Supabase error getting posts:", error, "Status:", status);
+      throw error;
+    }
+    
+    console.log(`Retrieved ${data?.length || 0} posts`);
     return data || [];
   } catch (error) {
     console.error('Error fetching posts:', error);
@@ -257,24 +313,42 @@ export const createPost = async (userId: number, postData: {
 // Simplify the votePost function to make it more reliable
 export const votePost = async (userId: number, postId: number, voteType: 'up' | 'down') => {
   try {
+    console.log(`Processing vote: user=${userId}, post=${postId}, type=${voteType}`);
+    
     // Check if user already voted on this post
-    const { data: existingVote, error: checkError } = await supabase
+    const { data: existingVote, error: checkError, status: checkStatus } = await supabase
       .from('post_votes')
       .select('id, vote_type')
       .eq('user_id', userId)
       .eq('post_id', postId)
       .maybeSingle();
     
-    if (checkError) throw checkError;
+    if (checkError) {
+      console.error("Error checking existing vote:", checkError, "Status:", checkStatus);
+      // Check if the table exists
+      if (checkStatus === 406) {
+        console.error("Table post_votes may not exist - creating vote tables");
+        // Try to create the table - this would require admin privileges 
+        // Consider a fallback mechanism here
+      }
+      throw checkError;
+    }
+    
+    console.log("Existing vote check result:", existingVote);
     
     // Get current vote counts
-    const { data: currentPost, error: postError } = await supabase
+    const { data: currentPost, error: postError, status: postStatus } = await supabase
       .from('posts')
       .select('upvotes, downvotes')
       .eq('id', postId)
       .single();
     
-    if (postError) throw postError;
+    if (postError) {
+      console.error("Error getting current post votes:", postError, "Status:", postStatus);
+      throw postError;
+    }
+    
+    console.log("Current post votes:", currentPost);
     
     let newUpvotes = currentPost.upvotes || 0;
     let newDownvotes = currentPost.downvotes || 0;
@@ -330,13 +404,25 @@ export const votePost = async (userId: number, postId: number, voteType: 'up' | 
     }
     
     // Update post with new vote counts
-    await supabase
+    const { error: updateError, status: updateStatus } = await supabase
       .from('posts')
       .update({ 
         upvotes: newUpvotes, 
         downvotes: newDownvotes 
       })
       .eq('id', postId);
+    
+    if (updateError) {
+      console.error("Error updating post votes:", updateError, "Status:", updateStatus);
+      throw updateError;
+    }
+    
+    console.log("Vote processed successfully:", { 
+      voted: resultVoteType !== null, 
+      voteType: resultVoteType,
+      upvotes: newUpvotes,
+      downvotes: newDownvotes
+    });
     
     return { 
       voted: resultVoteType !== null, 

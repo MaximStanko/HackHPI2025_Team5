@@ -16,6 +16,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { getAllScientificArticles, populateScientificArticles, voteOnArticle, getUserArticleVote } from '@/utils/supabase';
 import { Colors } from './theme.js';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
+import { storage } from '@/utils/storage';
 
 type Article = {
   id: number;
@@ -66,7 +67,8 @@ export default function ScientificScreen() {
     // Get session user ID from local storage
     const getUserData = async () => {
       try {
-        const sessionStr = await localStorage.getItem('session');
+        // Use the storage helper instead of direct localStorage access
+        const sessionStr = await storage.getItem('session');
         if (sessionStr) {
           const session = JSON.parse(sessionStr);
           setUserId(session?.user?.id);
@@ -132,23 +134,77 @@ export default function ScientificScreen() {
     if (!userId) return;
     
     try {
-      const { voted, voteType: newVoteType, upvotes, downvotes } = await voteOnArticle(userId, articleId, voteType);
+      // First update locally for immediate feedback
+      const targetArticle = articles.find(article => article.id === articleId);
+      if (!targetArticle) return;
       
-      // Update local state with new vote
+      // Prepare local update variables
+      let newLocalUpvotes = targetArticle.upvotes || 0;
+      let newLocalDownvotes = targetArticle.downvotes || 0;
+      const currentVote = userVotes[articleId];
+      
+      // Calculate new local vote state
+      if (!currentVote) {
+        // No previous vote, adding new vote
+        if (voteType === 'up') {
+          newLocalUpvotes += 1;
+        } else {
+          newLocalDownvotes += 1;
+        }
+      } else if (currentVote === voteType) {
+        // Removing same type of vote
+        if (voteType === 'up') {
+          newLocalUpvotes = Math.max(newLocalUpvotes - 1, 0);
+        } else {
+          newLocalDownvotes = Math.max(newLocalDownvotes - 1, 0);
+        }
+      } else {
+        // Changing vote type
+        if (voteType === 'up') {
+          newLocalUpvotes += 1;
+          newLocalDownvotes = Math.max(newLocalDownvotes - 1, 0);
+        } else {
+          newLocalDownvotes += 1;
+          newLocalUpvotes = Math.max(newLocalUpvotes - 1, 0);
+        }
+      }
+      
+      // Update state immediately for responsive UI
+      setArticles(currentArticles => 
+        currentArticles.map(article => 
+          article.id === articleId 
+            ? { ...article, upvotes: newLocalUpvotes, downvotes: newLocalDownvotes } 
+            : article
+        )
+      );
+      
+      // Update user votes for immediate feedback
       setUserVotes(prev => ({
         ...prev,
-        [articleId]: newVoteType
+        [articleId]: currentVote === voteType ? null : voteType
       }));
       
-      // Update article vote count with values from the server
-      setArticles(articles.map(article => {
-        if (article.id !== articleId) return article;
-        
-        // Use the upvotes and downvotes returned from the server
-        return { ...article, upvotes, downvotes };
+      // Send the request to the server
+      const result = await voteOnArticle(userId, articleId, voteType);
+      
+      // Update with server data to ensure consistency
+      setArticles(currentArticles => 
+        currentArticles.map(article => 
+          article.id === articleId 
+            ? { ...article, upvotes: result.upvotes, downvotes: result.downvotes } 
+            : article
+        )
+      );
+      
+      // Update user votes with server data
+      setUserVotes(prev => ({
+        ...prev,
+        [articleId]: result.voteType
       }));
     } catch (error) {
       console.error('Error voting on article:', error);
+      // Revert to original data if there was an error
+      setArticles(prev => [...prev]);
     }
   };
 
@@ -197,17 +253,7 @@ export default function ScientificScreen() {
                   themeStyles.voteButton,
                   userVote === 'up' && themeStyles.upvotedButton
                 ]} 
-                onPress={() => {
-                  // Add visual feedback before server response
-                  const isAlreadyUpvoted = userVote === 'up';
-                  if (!isAlreadyUpvoted) {
-                    setUserVotes(prev => ({
-                      ...prev,
-                      [item.id]: 'up'
-                    }));
-                  }
-                  handleVote(item.id, 'up');
-                }}
+                onPress={() => handleVote(item.id, 'up')}
               >
                 <FontAwesome 
                   name="arrow-up" 
@@ -225,17 +271,7 @@ export default function ScientificScreen() {
                   themeStyles.voteButton,
                   userVote === 'down' && themeStyles.downvotedButton
                 ]} 
-                onPress={() => {
-                  // Add visual feedback before server response
-                  const isAlreadyDownvoted = userVote === 'down';
-                  if (!isAlreadyDownvoted) {
-                    setUserVotes(prev => ({
-                      ...prev,
-                      [item.id]: 'down'
-                    }));
-                  }
-                  handleVote(item.id, 'down');
-                }}
+                onPress={() => handleVote(item.id, 'down')}
               >
                 <FontAwesome 
                   name="arrow-down" 

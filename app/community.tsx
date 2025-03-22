@@ -11,7 +11,8 @@ import {
   ScrollView,
   Modal,
   KeyboardAvoidingView,
-  Platform
+  Platform,
+  Alert
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { getAllPosts, createPost, populateExamplePosts, votePost, getUserVote } from '@/utils/supabase';
@@ -20,6 +21,7 @@ import { Colors } from './theme.js';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { Picker } from '@react-native-picker/picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { storage } from '@/utils/storage';
 
 type Post = {
   id: number;
@@ -77,9 +79,11 @@ export default function CommunityScreen() {
     // Get session user ID from local storage
     const getUserData = async () => {
       try {
-        const sessionStr = await localStorage.getItem('session');
+        // Use the storage helper instead of direct localStorage access
+        const sessionStr = await storage.getItem('session');
         if (sessionStr) {
           const session = JSON.parse(sessionStr);
+          console.log("Session loaded:", session);
           setUserId(session?.user?.id);
         }
       } catch (e) {
@@ -94,15 +98,28 @@ export default function CommunityScreen() {
     const loadPosts = async () => {
       setLoading(true);
       try {
+        console.log("Starting to load posts...");
+        
         // Populate example posts if none exist
-        await populateExamplePosts();
+        try {
+          await populateExamplePosts();
+          console.log("Example posts populated (if needed)");
+        } catch (populateError) {
+          console.error("Error populating example posts:", populateError);
+          // Continue anyway to try loading existing posts
+        }
         
         // Get all posts with current sorting
+        console.log("Fetching posts with sort:", sortBy);
         const allPosts = await getAllPosts(sortBy);
+        console.log("Posts fetched successfully:", allPosts.length);
         setPosts(allPosts);
         setFilteredPosts(allPosts);
       } catch (error) {
         console.error('Error loading posts:', error);
+        // Set empty arrays to avoid null reference errors
+        setPosts([]);
+        setFilteredPosts([]);
       } finally {
         setLoading(false);
       }
@@ -110,20 +127,32 @@ export default function CommunityScreen() {
 
     getUserData();
     loadPosts();
-  }, [sortBy]); // Add sortBy as dependency to reload when sorting changes
+  }, [sortBy]);
 
-  // Check user votes on posts
+  // Check user votes on posts - improve error handling
   useEffect(() => {
     const checkUserVotes = async () => {
       if (!userId) return;
       
+      console.log("Checking user votes for user ID:", userId);
       const votesMap: Record<number, 'up' | 'down' | null> = {};
-      for (const post of posts) {
-        const voteType = await getUserVote(userId, post.id);
-        votesMap[post.id] = voteType as 'up' | 'down' | null;
-      }
       
-      setUserVotes(votesMap);
+      try {
+        for (const post of posts) {
+          try {
+            const voteType = await getUserVote(userId, post.id);
+            votesMap[post.id] = voteType as 'up' | 'down' | null;
+          } catch (voteError) {
+            console.error(`Error getting vote for post ${post.id}:`, voteError);
+            // Skip this post and continue with others
+            votesMap[post.id] = null;
+          }
+        }
+        
+        setUserVotes(votesMap);
+      } catch (error) {
+        console.error("Error checking user votes:", error);
+      }
     };
 
     if (posts.length > 0 && userId) {
@@ -166,26 +195,88 @@ export default function CommunityScreen() {
   };
 
   const handleVote = async (postId: number, voteType: 'up' | 'down') => {
-    if (!userId) return;
+    if (!userId) {
+      console.log("Cannot vote - no user ID");
+      return;
+    }
     
     try {
-      const { voted, voteType: newVoteType, upvotes, downvotes } = await votePost(userId, postId, voteType);
+      // First update locally for immediate feedback
+      const targetPost = posts.find(post => post.id === postId);
+      if (!targetPost) return;
       
-      // Update local state with new vote
+      // Prepare local update variables
+      let newLocalUpvotes = targetPost.upvotes || 0;
+      let newLocalDownvotes = targetPost.downvotes || 0;
+      const currentVote = userVotes[postId];
+      
+      // Calculate new local vote state
+      if (!currentVote) {
+        // No previous vote, adding new vote
+        if (voteType === 'up') {
+          newLocalUpvotes += 1;
+        } else {
+          newLocalDownvotes += 1;
+        }
+      } else if (currentVote === voteType) {
+        // Removing same type of vote
+        if (voteType === 'up') {
+          newLocalUpvotes = Math.max(newLocalUpvotes - 1, 0);
+        } else {
+          newLocalDownvotes = Math.max(newLocalDownvotes - 1, 0);
+        }
+      } else {
+        // Changing vote type
+        if (voteType === 'up') {
+          newLocalUpvotes += 1;
+          newLocalDownvotes = Math.max(newLocalDownvotes - 1, 0);
+        } else {
+          newLocalDownvotes += 1;
+          newLocalUpvotes = Math.max(newLocalUpvotes - 1, 0);
+        }
+      }
+      
+      // Update state immediately for responsive UI
+      setPosts(currentPosts => 
+        currentPosts.map(post => 
+          post.id === postId 
+            ? { ...post, upvotes: newLocalUpvotes, downvotes: newLocalDownvotes } 
+            : post
+        )
+      );
+      
+      // Update user votes for immediate feedback
       setUserVotes(prev => ({
         ...prev,
-        [postId]: newVoteType
+        [postId]: currentVote === voteType ? null : voteType
       }));
       
-      // Update post vote count with values from the server
-      setPosts(posts.map(post => {
-        if (post.id !== postId) return post;
-        
-        // Use the upvotes and downvotes returned from the server
-        return { ...post, upvotes, downvotes };
+      // Send the request to the server
+      console.log(`Voting ${voteType} on post ${postId} by user ${userId}`);
+      const result = await votePost(userId, postId, voteType);
+      console.log("Vote result:", result);
+      
+      // Update with server data to ensure consistency
+      setPosts(currentPosts => 
+        currentPosts.map(post => 
+          post.id === postId 
+            ? { ...post, upvotes: result.upvotes, downvotes: result.downvotes } 
+            : post
+        )
+      );
+      
+      // Update user votes with server data
+      setUserVotes(prev => ({
+        ...prev,
+        [postId]: result.voteType
       }));
     } catch (error) {
       console.error('Error voting on post:', error);
+      // Show user feedback that vote failed
+      Alert.alert('Vote Error', 'Failed to register your vote. Please try again.');
+      
+      // Revert to original data if there was an error
+      setPosts(prev => [...prev]);
     }
   };
 
@@ -225,17 +316,7 @@ export default function CommunityScreen() {
                   themeStyles.voteButton,
                   userVote === 'up' && themeStyles.upvotedButton
                 ]} 
-                onPress={() => {
-                  // Add visual feedback before server response
-                  const isAlreadyUpvoted = userVote === 'up';
-                  if (!isAlreadyUpvoted) {
-                    setUserVotes(prev => ({
-                      ...prev,
-                      [item.id]: 'up'
-                    }));
-                  }
-                  handleVote(item.id, 'up');
-                }}
+                onPress={() => handleVote(item.id, 'up')}
               >
                 <FontAwesome 
                   name="arrow-up" 
@@ -253,17 +334,7 @@ export default function CommunityScreen() {
                   themeStyles.voteButton,
                   userVote === 'down' && themeStyles.downvotedButton
                 ]} 
-                onPress={() => {
-                  // Add visual feedback before server response
-                  const isAlreadyDownvoted = userVote === 'down';
-                  if (!isAlreadyDownvoted) {
-                    setUserVotes(prev => ({
-                      ...prev,
-                      [item.id]: 'down'
-                    }));
-                  }
-                  handleVote(item.id, 'down');
-                }}
+                onPress={() => handleVote(item.id, 'down')}
               >
                 <FontAwesome 
                   name="arrow-down" 
