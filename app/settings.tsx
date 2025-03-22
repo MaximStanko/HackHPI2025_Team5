@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Switch } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Picker } from '@react-native-picker/picker';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
@@ -10,6 +11,21 @@ export default function SettingsScreen() {
   const [notificationTime, setNotificationTime] = useState('morning');
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
+
+  useEffect(() => {
+    const loadSettings = async () => {
+      const storedDarkMode = await AsyncStorage.getItem('darkMode');
+      if (storedDarkMode !== null) {
+        setIsDarkMode(JSON.parse(storedDarkMode));
+      }
+    };
+    loadSettings();
+  }, []);
+
+  const toggleDarkMode = async (value) => {
+    setIsDarkMode(value);
+    await AsyncStorage.setItem('darkMode', JSON.stringify(value));
+  };
 
   const themeStyles = isDarkMode ? darkStyles : lightStyles;
 
@@ -102,9 +118,9 @@ export default function SettingsScreen() {
           </View>
           <View style={themeStyles.switchContainer}>
             <Text style={themeStyles.switchLabel}>Dark Mode</Text>
-            <Switch
-              value={isDarkMode}
-              onValueChange={(value) => setIsDarkMode(value)}
+            <Switch 
+              value={isDarkMode} 
+              onValueChange={toggleDarkMode} 
               style={themeStyles.switch}
             />
           </View>

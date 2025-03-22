@@ -19,6 +19,7 @@ import { commonStyles } from './styles.js';
 import { Colors } from './theme.js';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { Picker } from '@react-native-picker/picker';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 type Post = {
   id: number;
@@ -49,6 +50,8 @@ export default function CommunityScreen() {
   const [userVotes, setUserVotes] = useState<Record<number, 'up' | 'down' | null>>({});
   const [sortBy, setSortBy] = useState('newest');
   const [showSortPicker, setShowSortPicker] = useState(false);
+  const [isAnonymous, setIsAnonymous] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(false);
 
   const categories = ['All', 'General', 'Tips', 'Questions', 'Experiences', 'Research'];
   const sortOptions = [
@@ -57,6 +60,18 @@ export default function CommunityScreen() {
     { label: 'Oldest', value: 'oldest' },
     { label: 'Controversial', value: 'controversial' },
   ];
+
+  const loadSettings = async () => {
+    const storedDarkMode = await AsyncStorage.getItem('darkMode');
+    if (storedDarkMode !== null) {
+      setIsDarkMode(JSON.parse(storedDarkMode));
+    }
+  };
+  useEffect(() => {
+    loadSettings();
+  }, []);
+
+  const themeStyles = isDarkMode ? darkStyles : lightStyles;
 
   useEffect(() => {
     // Get session user ID from local storage
@@ -71,6 +86,10 @@ export default function CommunityScreen() {
         console.error('Failed to get user ID:', e);
       }
     };
+
+    setInterval(() => {
+      loadSettings();
+    }, 100); 
 
     const loadPosts = async () => {
       setLoading(true);
@@ -184,27 +203,27 @@ export default function CommunityScreen() {
     const voteScore = (item.upvotes || 0) - (item.downvotes || 0);
     
     return (
-      <View style={styles.postCard}>
+      <View style={themeStyles.postCard}>
         {item.image_url && (
-          <Image source={{ uri: item.image_url }} style={styles.postImage} />
+          <Image source={{ uri: item.image_url }} style={themeStyles.postImage} />
         )}
         
-        <View style={styles.postContent}>
-          <Text style={styles.postCategory}>{item.category || 'General'}</Text>
-          <Text style={styles.postTitle}>{item.title}</Text>
-          <Text style={styles.postSummary} numberOfLines={3}>{item.content}</Text>
+        <View style={themeStyles.postContent}>
+          <Text style={themeStyles.postCategory}>{item.category || 'General'}</Text>
+          <Text style={themeStyles.postTitle}>{item.title}</Text>
+          <Text style={themeStyles.postSummary} numberOfLines={3}>{item.content}</Text>
           
-          <View style={styles.postFooter}>
-            <View style={styles.postAuthorSection}>
-              <Text style={styles.postAuthor}>{authorName}</Text>
-              <Text style={styles.postDate}>{formatDate(item.created_at)}</Text>
+          <View style={themeStyles.postFooter}>
+            <View style={themeStyles.postAuthorSection}>
+              <Text style={themeStyles.postAuthor}>{authorName}</Text>
+              <Text style={themeStyles.postDate}>{formatDate(item.created_at)}</Text>
             </View>
             
-            <View style={styles.voteContainer}>
+            <View style={themeStyles.voteContainer}>
               <TouchableOpacity 
                 style={[
-                  styles.voteButton,
-                  userVote === 'up' && styles.upvotedButton
+                  themeStyles.voteButton,
+                  userVote === 'up' && themeStyles.upvotedButton
                 ]} 
                 onPress={() => {
                   // Add visual feedback before server response
@@ -225,14 +244,14 @@ export default function CommunityScreen() {
                 />
               </TouchableOpacity>
               
-              <Text style={styles.voteScore}>
+              <Text style={themeStyles.voteScore}>
                 {voteScore}
               </Text>
               
               <TouchableOpacity 
                 style={[
-                  styles.voteButton,
-                  userVote === 'down' && styles.downvotedButton
+                  themeStyles.voteButton,
+                  userVote === 'down' && themeStyles.downvotedButton
                 ]} 
                 onPress={() => {
                   // Add visual feedback before server response
@@ -260,38 +279,38 @@ export default function CommunityScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Tinnitus Community</Text>
+    <SafeAreaView style={themeStyles.container}>
+      <View style={themeStyles.header}>
+        <Text style={themeStyles.title}>Tinnitus Community</Text>
         
-        <View style={styles.headerButtons}>
+        <View style={themeStyles.headerButtons}>
           <TouchableOpacity 
-            style={styles.sortButton}
+            style={themeStyles.sortButton}
             onPress={() => setShowSortPicker(!showSortPicker)}
           >
             <FontAwesome name="sort" size={16} color="#666" />
-            <Text style={styles.sortButtonText}>
+            <Text style={themeStyles.sortButtonText}>
               {sortOptions.find(opt => opt.value === sortBy)?.label}
             </Text>
           </TouchableOpacity>
           
           <TouchableOpacity 
-            style={styles.newPostButton}
+            style={themeStyles.newPostButton}
             onPress={() => setModalVisible(true)}
           >
-            <Text style={styles.newPostButtonText}>+ New Post</Text>
+            <Text style={themeStyles.newPostButtonText}>+ New Post</Text>
           </TouchableOpacity>
         </View>
       </View>
       
       {showSortPicker && (
-        <View style={styles.sortPickerContainer}>
+        <View style={themeStyles.sortPickerContainer}>
           {sortOptions.map(option => (
             <TouchableOpacity
               key={option.value}
               style={[
-                styles.sortOption,
-                sortBy === option.value && styles.selectedSortOption
+                themeStyles.sortOption,
+                sortBy === option.value && themeStyles.selectedSortOption
               ]}
               onPress={() => {
                 setSortBy(option.value);
@@ -299,8 +318,8 @@ export default function CommunityScreen() {
               }}
             >
               <Text style={[
-                styles.sortOptionText,
-                sortBy === option.value && styles.selectedSortOptionText
+                themeStyles.sortOptionText,
+                sortBy === option.value && themeStyles.selectedSortOptionText
               ]}>
                 {option.label}
               </Text>
@@ -312,22 +331,22 @@ export default function CommunityScreen() {
       <ScrollView 
         horizontal 
         showsHorizontalScrollIndicator={false} 
-        contentContainerStyle={styles.categoryScrollContainer}
-        style={styles.categoryContainer}
+        contentContainerStyle={themeStyles.categoryScrollContainer}
+        style={themeStyles.categoryContainer}
       >
         {categories.map(category => (
           <TouchableOpacity
             key={category}
             style={[
-              styles.categoryButton,
-              selectedCategory === category && styles.selectedCategoryButton
+              themeStyles.categoryButton,
+              selectedCategory === category && themeStyles.selectedCategoryButton
             ]}
             onPress={() => setSelectedCategory(category)}
           >
             <Text 
               style={[
-                styles.categoryText,
-                selectedCategory === category && styles.selectedCategoryText
+                themeStyles.categoryText,
+                selectedCategory === category && themeStyles.selectedCategoryText
               ]}
             >
               {category}
@@ -337,21 +356,21 @@ export default function CommunityScreen() {
       </ScrollView>
       
       {loading ? (
-        <ActivityIndicator size="large" color={Colors.primary} style={styles.loader} />
+        <ActivityIndicator size="large" color={Colors.primary} style={themeStyles.loader} />
       ) : (
         <FlatList
           data={filteredPosts}
           renderItem={renderPost}
           keyExtractor={(item) => item.id.toString()}
-          contentContainerStyle={styles.listContainer}
+          contentContainerStyle={themeStyles.listContainer}
           ListEmptyComponent={
-            <View style={styles.emptyContainer}>
-              <Text style={styles.emptyText}>No posts in this category yet.</Text>
+            <View style={themeStyles.emptyContainer}>
+              <Text style={themeStyles.emptyText}>No posts in this category yet.</Text>
               <TouchableOpacity 
-                style={styles.emptyButton}
+                style={themeStyles.emptyButton}
                 onPress={() => setModalVisible(true)}
               >
-                <Text style={styles.emptyButtonText}>Create the first post</Text>
+                <Text style={themeStyles.emptyButtonText}>Create the first post</Text>
               </TouchableOpacity>
             </View>
           }
@@ -365,39 +384,39 @@ export default function CommunityScreen() {
         visible={modalVisible}
         onRequestClose={() => setModalVisible(false)}
       >
-        <View style={styles.modalOverlay}>
+        <View style={themeStyles.modalOverlay}>
           <KeyboardAvoidingView
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            style={styles.modalContainer}
+            style={themeStyles.modalContainer}
           >
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Create New Post</Text>
+            <View style={themeStyles.modalHeader}>
+              <Text style={themeStyles.modalTitle}>Create New Post</Text>
               <TouchableOpacity onPress={() => setModalVisible(false)}>
                 <FontAwesome name="times" size={24} color="#333" />
               </TouchableOpacity>
             </View>
             
-            <View style={styles.modalBody}>
-              <Text style={styles.inputLabel}>Category</Text>
+            <View style={themeStyles.modalBody}>
+              <Text style={themeStyles.inputLabel}>Category</Text>
               <ScrollView 
                 horizontal 
                 showsHorizontalScrollIndicator={false} 
-                contentContainerStyle={styles.categoryScrollContainer}
-                style={styles.modalCategoryContainer}
+                contentContainerStyle={themeStyles.categoryScrollContainer}
+                style={themeStyles.modalCategoryContainer}
               >
                 {categories.slice(1).map(category => (
                   <TouchableOpacity
                     key={category}
                     style={[
-                      styles.categoryButton,
-                      newPostCategory === category && styles.selectedCategoryButton
+                      themeStyles.categoryButton,
+                      newPostCategory === category && themeStyles.selectedCategoryButton
                     ]}
                     onPress={() => setNewPostCategory(category)}
                   >
                     <Text 
                       style={[
-                        styles.categoryText,
-                        newPostCategory === category && styles.selectedCategoryText
+                        themeStyles.categoryText,
+                        newPostCategory === category && themeStyles.selectedCategoryText
                       ]}
                     >
                       {category}
@@ -406,18 +425,18 @@ export default function CommunityScreen() {
                 ))}
               </ScrollView>
               
-              <Text style={styles.inputLabel}>Title</Text>
+              <Text style={themeStyles.inputLabel}>Title</Text>
               <TextInput
-                style={styles.titleInput}
+                style={themeStyles.titleInput}
                 placeholder="Enter a descriptive title..."
                 value={newPostTitle}
                 onChangeText={setNewPostTitle}
                 maxLength={100}
               />
               
-              <Text style={styles.inputLabel}>Content</Text>
+              <Text style={themeStyles.inputLabel}>Content</Text>
               <TextInput
-                style={styles.contentInput}
+                style={themeStyles.contentInput}
                 placeholder="Share your thoughts, experience or question..."
                 value={newPostContent}
                 onChangeText={setNewPostContent}
@@ -427,8 +446,8 @@ export default function CommunityScreen() {
               
               <TouchableOpacity 
                 style={[
-                  styles.submitButton, 
-                  (!newPostTitle.trim() || !newPostContent.trim()) && styles.disabledButton
+                  themeStyles.submitButton, 
+                  (!newPostTitle.trim() || !newPostContent.trim()) && themeStyles.disabledButton
                 ]}
                 onPress={handleCreatePost}
                 disabled={!newPostTitle.trim() || !newPostContent.trim() || submitting}
@@ -436,7 +455,7 @@ export default function CommunityScreen() {
                 {submitting ? (
                   <ActivityIndicator size="small" color="#fff" />
                 ) : (
-                  <Text style={styles.submitButtonText}>Post</Text>
+                  <Text style={themeStyles.submitButtonText}>Post</Text>
                 )}
               </TouchableOpacity>
             </View>
@@ -447,304 +466,121 @@ export default function CommunityScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f8f9fa',
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e1e4e8',
-    backgroundColor: '#fff',
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: Colors.primary,
-  },
-  headerButtons: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  sortButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginRight: 12,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 16,
-    backgroundColor: '#f1f3f5',
-  },
-  sortButtonText: {
-    fontSize: 12,
-    color: '#666',
-    marginLeft: 4,
-  },
-  newPostButton: {
-    backgroundColor: Colors.primary,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-  },
-  newPostButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-  },
-  sortPickerContainer: {
-    backgroundColor: 'white',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e1e4e8',
-    paddingVertical: 8,
-  },
-  sortOption: {
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-  },
-  selectedSortOption: {
-    backgroundColor: '#f1f3f5',
-  },
-  sortOptionText: {
-    fontSize: 14,
-    color: '#333',
-  },
-  selectedSortOptionText: {
-    fontWeight: 'bold',
-    color: Colors.primary,
-  },
-  categoryContainer: {
-    flexDirection: 'row',
-    paddingVertical: 12,
-    paddingHorizontal: 8,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e1e4e8',
-    maxHeight: 60,
-    minHeight: 60,
-  },
-  categoryScrollContainer: {
-    paddingLeft: 4,
-    paddingRight: 4,
-  },
-  categoryButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    marginHorizontal: 4,
-    borderRadius: 20,
-    backgroundColor: '#f1f3f5',
-    minWidth: 80,
-    alignItems: 'center',
-  },
-  selectedCategoryButton: {
-    backgroundColor: Colors.primary,
-  },
-  categoryText: {
-    color: '#333',
-    fontWeight: '500',
-  },
-  selectedCategoryText: {
-    color: '#fff',
-  },
-  loader: {
-    marginTop: 20,
-  },
-  listContainer: {
-    padding: 12,
-  },
-  postCard: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    marginBottom: 16,
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  postImage: {
-    width: '100%',
-    height: 150,
-    resizeMode: 'cover',
-  },
-  postContent: {
-    padding: 16,
-  },
-  postCategory: {
-    color: Colors.primary,
-    fontWeight: '500',
-    fontSize: 12,
-    marginBottom: 4,
-  },
-  postTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 8,
-    color: '#333',
-  },
-  postSummary: {
-    fontSize: 14,
-    color: '#666',
-    lineHeight: 20,
-    marginBottom: 16,
-  },
-  postFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    borderTopWidth: 1,
-    borderTopColor: '#f1f3f5',
-    paddingTop: 12,
-  },
-  postAuthorSection: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  postAuthor: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#333',
-    marginRight: 8,
-  },
-  postDate: {
-    fontSize: 12,
-    color: '#999',
-  },
-  voteContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#f8f9fa',
-    borderRadius: 16,
-    paddingHorizontal: 4,
-  },
-  voteButton: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  upvotedButton: {
-    backgroundColor: '#4caf50',
-  },
-  downvotedButton: {
-    backgroundColor: '#f44336',
-  },
-  voteScore: {
-    fontWeight: 'bold',
-    marginHorizontal: 4,
-    minWidth: 20,
-    textAlign: 'center',
-  },
-  likeButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#f8f9fa',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-  },
-  likedButton: {
-    backgroundColor: Colors.primary,
-  },
-  likeCount: {
-    marginLeft: 4,
-    color: Colors.primary,
-    fontWeight: '500',
-  },
-  likedButtonText: {
-    color: '#fff',
-  },
-  emptyContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 40,
-  },
-  emptyText: {
-    fontSize: 16,
-    color: '#666',
-    marginBottom: 20,
-    textAlign: 'center',
-  },
-  emptyButton: {
-    backgroundColor: Colors.primary,
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 20,
-  },
-  emptyButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'flex-end',
-  },
-  modalContainer: {
-    backgroundColor: '#fff',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    maxHeight: '80%',
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e1e4e8',
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: Colors.primary,
-  },
-  modalBody: {
-    padding: 16,
-  },
-  modalCategoryContainer: {
-    flexDirection: 'row',
-    marginBottom: 16,
-  },
-  inputLabel: {
-    fontSize: 14,
-    fontWeight: '500',
-    marginBottom: 8,
-    color: '#333',
-  },
-  titleInput: {
-    backgroundColor: '#f1f3f5',
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 16,
-    fontSize: 16,
-  },
-  contentInput: {
-    backgroundColor: '#f1f3f5',
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-    minHeight: 120,
-    marginBottom: 16,
-  },
-  submitButton: {
-    backgroundColor: Colors.primary,
-    borderRadius: 8,
-    padding: 16,
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  disabledButton: {
-    backgroundColor: '#a0a0a0',
-  },
-  submitButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 16,
-  },
+const lightStyles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: '#f8f9fa' },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#e1e4e8', backgroundColor: '#fff' },
+  title: { fontSize: 20, fontWeight: 'bold', color: Colors.primary },
+  headerButtons: { flexDirection: 'row', alignItems: 'center' },
+  sortButton: { flexDirection: 'row', alignItems: 'center', marginRight: 12, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 16, backgroundColor: '#f1f3f5' },
+  sortButtonText: { fontSize: 12, color: '#666', marginLeft: 4 },
+  newPostButton: { backgroundColor: Colors.primary, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 },
+  newPostButtonText: { color: '#fff', fontWeight: 'bold' },
+  sortPickerContainer: { backgroundColor: 'white', borderBottomWidth: 1, borderBottomColor: '#e1e4e8', paddingVertical: 8 },
+  sortOption: { paddingVertical: 10, paddingHorizontal: 16 },
+  selectedSortOption: { backgroundColor: '#f1f3f5' },
+  sortOptionText: { fontSize: 14, color: '#333' },
+  selectedSortOptionText: { fontWeight: 'bold', color: Colors.primary },
+  categoryContainer: { flexDirection: 'row', paddingVertical: 12, paddingHorizontal: 8, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#e1e4e8', maxHeight: 60, minHeight: 60 },
+  categoryScrollContainer: { paddingLeft: 4, paddingRight: 4 },
+  categoryButton: { paddingHorizontal: 16, paddingVertical: 8, marginHorizontal: 4, borderRadius: 20, backgroundColor: '#f1f3f5', minWidth: 80, alignItems: 'center' },
+  selectedCategoryButton: { backgroundColor: Colors.primary },
+  categoryText: { color: '#333', fontWeight: '500' },
+  selectedCategoryText: { color: '#fff' },
+  loader: { marginTop: 20 },
+  listContainer: { padding: 12 },
+  postCard: { backgroundColor: '#fff', borderRadius: 12, marginBottom: 16, overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 2 },
+  postImage: { width: '100%', height: 150, resizeMode: 'cover' },
+  postContent: { padding: 16 },
+  postCategory: { color: Colors.primary, fontWeight: '500', fontSize: 12, marginBottom: 4 },
+  postTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 8, color: '#333' },
+  postSummary: { fontSize: 14, color: '#666', lineHeight: 20, marginBottom: 16 },
+  postFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderTopWidth: 1, borderTopColor: '#f1f3f5', paddingTop: 12 },
+  postAuthorSection: { flexDirection: 'row', alignItems: 'center' },
+  postAuthor: { fontSize: 14, fontWeight: '500', color: '#333', marginRight: 8 },
+  postDate: { fontSize: 12, color: '#999' },
+  voteContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#f8f9fa', borderRadius: 16, paddingHorizontal: 4 },
+  voteButton: { width: 30, height: 30, borderRadius: 15, justifyContent: 'center', alignItems: 'center' },
+  upvotedButton: { backgroundColor: '#4caf50' },
+  downvotedButton: { backgroundColor: '#f44336' },
+  voteScore: { fontWeight: 'bold', marginHorizontal: 4, minWidth: 20, textAlign: 'center' },
+  likeButton: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#f8f9fa', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16 },
+  likedButton: { backgroundColor: Colors.primary },
+  likeCount: { marginLeft: 4, color: Colors.primary, fontWeight: '500' },
+  likedButtonText: { color: '#fff' },
+  emptyContainer: { alignItems: 'center', justifyContent: 'center', padding: 40 },
+  emptyText: { fontSize: 16, color: '#666', marginBottom: 20, textAlign: 'center' },
+  emptyButton: { backgroundColor: Colors.primary, paddingHorizontal: 20, paddingVertical: 10, borderRadius: 20 },
+  emptyButtonText: { color: '#fff', fontWeight: 'bold' },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
+  modalContainer: { backgroundColor: '#fff', borderTopLeftRadius: 20, borderTopRightRadius: 20, maxHeight: '80%' },
+  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16, borderBottomWidth: 1, borderBottomColor: '#e1e4e8' },
+  modalTitle: { fontSize: 18, fontWeight: 'bold', color: Colors.primary },
+  modalBody: { padding: 16 },
+  modalCategoryContainer: { flexDirection: 'row', marginBottom: 16 },
+  inputLabel: { fontSize: 14, fontWeight: '500', marginBottom: 8, color: '#333' },
+  titleInput: { backgroundColor: '#f1f3f5', borderRadius: 8, padding: 12, marginBottom: 16, fontSize: 16 },
+  contentInput: { backgroundColor: '#f1f3f5', borderRadius: 8, padding: 12, fontSize: 16, minHeight: 120, marginBottom: 16 },
+  submitButton: { backgroundColor: Colors.primary, borderRadius: 8, padding: 16, alignItems: 'center', marginTop: 8 },
+  disabledButton: { backgroundColor: '#a0a0a0' },
+  submitButtonText: { color: '#fff', fontWeight: 'bold', fontSize: 16 }
+});
+
+
+const darkStyles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: '#1E1E1E' },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#1E1E1E', backgroundColor: '#1E1E1E' },
+  title: { fontSize: 20, fontWeight: 'bold', color: '#fff' },
+  headerButtons: { flexDirection: 'row', alignItems: 'center' },
+  sortButton: { flexDirection: 'row', alignItems: 'center', marginRight: 12, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 16, backgroundColor: '#1E1E1E' },
+  sortButtonText: { fontSize: 12, color: '#fff', marginLeft: 4 },
+  newPostButton: { backgroundColor: '#1E1E1E', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 },
+  newPostButtonText: { color: '#fff', fontWeight: 'bold' },
+  sortPickerContainer: { backgroundColor: '#1E1E1E', borderBottomWidth: 1, borderBottomColor: '#1E1E1E', paddingVertical: 8 },
+  sortOption: { paddingVertical: 10, paddingHorizontal: 16 },
+  selectedSortOption: { backgroundColor: '#1E1E1E' },
+  sortOptionText: { fontSize: 14, color: '#fff' },
+  selectedSortOptionText: { fontWeight: 'bold', color: '#fff' },
+  categoryContainer: { flexDirection: 'row', paddingVertical: 12, paddingHorizontal: 8, backgroundColor: '#1E1E1E', borderBottomWidth: 1, borderBottomColor: '#1E1E1E', maxHeight: 60, minHeight: 60 },
+  categoryScrollContainer: { paddingLeft: 4, paddingRight: 4 },
+  categoryButton: { paddingHorizontal: 16, paddingVertical: 8, marginHorizontal: 4, borderRadius: 20, backgroundColor: '#1E1E1E', minWidth: 80, alignItems: 'center' },
+  selectedCategoryButton: { backgroundColor: '#1E1E1E' },
+  categoryText: { color: '#fff', fontWeight: '500' },
+  selectedCategoryText: { color: '#fff' },
+  loader: { marginTop: 20 },
+  listContainer: { padding: 12 },
+  postCard: { backgroundColor: '#474747', borderRadius: 12, marginBottom: 16, overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 2 },
+  postImage: { width: '100%', height: 150, resizeMode: 'cover' },
+  postContent: { padding: 16 },
+  postCategory: { color: '#fff', fontWeight: '500', fontSize: 12, marginBottom: 4 },
+  postTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 8, color: '#fff' },
+  postSummary: { fontSize: 14, color: '#fff', lineHeight: 20, marginBottom: 16 },
+  postFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderTopWidth: 1, borderTopColor: '#f1f3f5', paddingTop: 12 },
+  postAuthorSection: { flexDirection: 'row', alignItems: 'center' },
+  postAuthor: { fontSize: 14, fontWeight: '500', color: '#fff', marginRight: 8 },
+  postDate: { fontSize: 12, color: '#999' },
+  voteContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderRadius: 16, paddingHorizontal: 4 },
+  voteButton: { width: 30, height: 30, borderRadius: 15, justifyContent: 'center', alignItems: 'center' },
+  upvotedButton: { backgroundColor: '#4caf50' },
+  downvotedButton: { backgroundColor: '#f44336' },
+  voteScore: { fontWeight: 'bold', marginHorizontal: 4, minWidth: 20, textAlign: 'center' },
+  likeButton: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#1E1E1E', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16 },
+  likedButton: { backgroundColor: '#1E1E1E' },
+  likeCount: { marginLeft: 4, color: Colors.primary, fontWeight: '500' },
+  likedButtonText: { color: '#fff' },
+  emptyContainer: { alignItems: 'center', justifyContent: 'center', padding: 40 },
+  emptyText: { fontSize: 16, color: '#fff', marginBottom: 20, textAlign: 'center' },
+  emptyButton: { backgroundColor: '#1E1E1E', paddingHorizontal: 20, paddingVertical: 10, borderRadius: 20 },
+  emptyButtonText: { color: '#fff', fontWeight: 'bold' },
+  modalOverlay: { flex: 1, backgroundColor: '1E1E1E', justifyContent: 'flex-end' },
+  modalContainer: { backgroundColor: '#1E1E1E', borderTopLeftRadius: 20, borderTopRightRadius: 20, maxHeight: '80%' },
+  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16, borderBottomWidth: 1, borderBottomColor: '#e1e4e8' },
+  modalTitle: { fontSize: 18, fontWeight: 'bold', color: Colors.primary },
+  modalBody: { padding: 16 },
+  modalCategoryContainer: { flexDirection: 'row', marginBottom: 16 },
+  inputLabel: { fontSize: 14, fontWeight: '500', marginBottom: 8, color: '#333' },
+  titleInput: { backgroundColor: '#f1f3f5', borderRadius: 8, padding: 12, marginBottom: 16, fontSize: 16 },
+  contentInput: { backgroundColor: '#f1f3f5', borderRadius: 8, padding: 12, fontSize: 16, minHeight: 120, marginBottom: 16 },
+  submitButton: { backgroundColor: '1E1E1E', borderRadius: 8, padding: 16, alignItems: 'center', marginTop: 8 },
+  disabledButton: { backgroundColor: '#1E1E1E' },
+  submitButtonText: { color: '#1E1E1E', fontWeight: 'bold', fontSize: 16 }
 });
