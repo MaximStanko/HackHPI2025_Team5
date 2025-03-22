@@ -14,73 +14,124 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   },
 });
 
-// Custom plain text login/registration
-export const createOrLoginUser = async (email: string, password: string) => {
+// Simplified authentication with no validation
+export const signInWithEmail = async (email: string, password: string) => {
   try {
-    // Check if user exists
-    const { data: existingUsers, error: findError } = await supabase
+    // Direct database check for matching email and password
+    const { data: users, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('email', email)
+      .eq('password', password);
+    
+    if (error) throw error;
+    
+    if (users && users.length > 0) {
+      // Found matching user, create session
+      const user = users[0];
+      
+      // Ensure user has settings
+      await ensureUserSettingsExist(user.id);
+      
+      // Return a session-like structure with user info
+      return { 
+        data: {
+          session: {
+            user: {
+              id: user.id,
+              email: user.email
+            }
+          },
+          user: {
+            id: user.id,
+            email: user.email
+          }
+        }, 
+        error: null 
+      };
+    } else {
+      // No match found
+      throw new Error('Invalid email or password');
+    }
+  } catch (error) {
+    console.error('Sign in error:', error);
+    return { data: null, error };
+  }
+};
+
+export const signUpWithEmail = async (email: string, password: string) => {
+  try {
+    // Check if user already exists
+    const { data: existingUsers } = await supabase
       .from('users')
       .select('*')
       .eq('email', email);
-      
-    if (findError) throw findError;
     
-    // If user exists, check password
     if (existingUsers && existingUsers.length > 0) {
-      const user = existingUsers[0];
-      
-      if (user.password === password) {
-        // Create a mock session
-        return {
-          data: {
-            session: {
-              user: {
-                id: user.id,
-                email: user.email
-              }
-            }
-          },
-          error: null
-        };
-      } else {
-        throw new Error('Incorrect password');
-      }
+      throw new Error('User with this email already exists');
     }
     
-    // If user doesn't exist, create one
-    const { data: newUser, error: createError } = await supabase
+    // Create new user directly in database
+    const { data: newUser, error } = await supabase
       .from('users')
       .insert({ email, password })
       .select()
       .single();
-      
-    if (createError) throw createError;
     
-    // Create default settings for new user
-    await supabase
-      .from('user_settings')
-      .insert({
-        user_id: newUser.id,
-        tinnitus_level: 0,
-        dark_mode: true,
-        notifications_enabled: true
-      });
-      
-    // Return mock session
-    return {
+    if (error) throw error;
+    
+    // Create default settings
+    await createDefaultSettings(newUser.id);
+    
+    // Return session-like structure
+    return { 
       data: {
         session: {
           user: {
             id: newUser.id,
             email: newUser.email
           }
+        },
+        user: {
+          id: newUser.id,
+          email: newUser.email
         }
-      },
-      error: null
+      }, 
+      error: null 
     };
   } catch (error) {
-    console.error('Auth error:', error);
+    console.error('Sign up error:', error);
     return { data: null, error };
+  }
+};
+
+export const signInAsGuest = async () => {
+  try {
+    // Generate a random email and password for guest
+    const timestamp = Date.now();
+    const random = Math.floor(Math.random() * 10000);
+    const email = `guest_${timestamp}_${random}@tinnitus-guest.com`;
+    const password = `guest${random}`;
+    
+    // Create guest account directly in the database
+    const { data, error } = await signUpWithEmail(email, password);
+    if (error) throw error;
+    
+    return { data, error: null };
+  } catch (error) {
+    console.error('Guest sign in error:', error);
+    return { data: null, error };
+  }
+};
+
+export const signOut = async () => {
+  try {
+    const { error } = await supabase.auth.signOut();
+    if (error) throw error;
+    return { error: null };
+  } catch (error) {
+    console.error('Sign out error:', error);
+    return { error };
   }
 };
 

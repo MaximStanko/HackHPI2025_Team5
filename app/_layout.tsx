@@ -1,6 +1,6 @@
 import { Tabs } from 'expo-router';
 import React, { useState, useEffect } from 'react';
-import { Platform, View, TextInput, Button, Text } from 'react-native';
+import { Platform, View, TextInput, Button, Text, TouchableOpacity } from 'react-native';
 
 import { HapticTab } from '@/components/HapticTab';
 import { IconSymbol } from '@/components/ui/IconSymbol';
@@ -14,7 +14,7 @@ import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
 import { commonStyles } from './styles.js';
 import { Colors } from './theme.js';
 
-import { createOrLoginUser, getUserSettings } from '@/utils/supabase';
+import { signInWithEmail, signUpWithEmail, signInAsGuest, signOut, getUserSettings } from '@/utils/supabase';
 import { supabase } from '../lib/supabase'
 import Auth from '../components/Auth'
 import Account from '../components/Account'
@@ -59,11 +59,29 @@ export default function TabLayout() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [userSettings, setUserSettings] = useState<UserSettings | null>(null);
+  const [isSignUp, setIsSignUp] = useState(false);
+  
+  // Check for existing session on load
+  useEffect(() => {
+    const checkSession = async () => {
+      const { data } = await supabase.auth.getSession();
+      if (data.session) {
+        setSession({
+          user: {
+            id: data.session.user.id,
+            email: data.session.user.email || ''
+          }
+        });
+      }
+    };
+    
+    checkSession();
+  }, []);
 
   // Load user settings when session changes
   useEffect(() => {
     if (session?.user) {
-      getUserSettings(session.user.id.toString())
+      getUserSettings(session.user.id)
         .then(settings => {
           setUserSettings(settings);
         })
@@ -77,17 +95,28 @@ export default function TabLayout() {
     try {
       setError(null);
       setLoading(true);
-      const { data, error } = await createOrLoginUser(email, password);
-      if (error) throw error;
       
-      // Store session in localStorage for other components to access
-      if (Platform.OS === 'web') {
-        localStorage.setItem('session', JSON.stringify(data.session));
+      let response;
+      if (isSignUp) {
+        // Simple sign up with no validation
+        response = await signUpWithEmail(email, password);
+      } else {
+        // Simple sign in with no validation
+        response = await signInWithEmail(email, password);
       }
       
-      setSession(data.session);
+      if (response.error) throw response.error;
+      
+      if (response.data.session) {
+        // Store user session
+        if (Platform.OS === 'web') {
+          localStorage.setItem('session', JSON.stringify(response.data.session));
+        }
+        
+        setSession(response.data.session);
+      }
     } catch (error: any) {
-      setError(error.message);
+      setError(error.message || 'Authentication error');
     } finally {
       setLoading(false);
     }
@@ -98,19 +127,17 @@ export default function TabLayout() {
       setError(null);
       setLoading(true);
       
-      // Simple guest login
-      const timestamp = Date.now();
-      const guestEmail = `guest${timestamp}@example.com`;
-      const { data, error } = await createOrLoginUser(guestEmail, 'guest');
+      const response = await signInAsGuest();
+      if (response.error) throw response.error;
       
-      if (error) throw error;
-      
-      // Store session in localStorage for other components to access
-      if (Platform.OS === 'web') {
-        localStorage.setItem('session', JSON.stringify(data.session));
+      if (response.data.session) {
+        // Store guest session
+        if (Platform.OS === 'web') {
+          localStorage.setItem('session', JSON.stringify(response.data.session));
+        }
+        
+        setSession(response.data.session);
       }
-      
-      setSession(data.session);
     } catch (error: any) {
       console.error('Guest login error:', error);
       setError(error.message || 'Failed to login as guest');
@@ -120,9 +147,7 @@ export default function TabLayout() {
   };
 
   const handleLogout = async () => {
-    if (Platform.OS === 'web') {
-      localStorage.removeItem('session');
-    }
+    await signOut();
     setSession(null);
   };
 
@@ -136,8 +161,11 @@ export default function TabLayout() {
 
   if (!session) {
     return (
-      session2 && session2.user ? <Account key={session2.user.id} session={session2} /> : <Auth />
-      /*<View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 }}>
+        <Text style={{ fontSize: 24, fontWeight: 'bold', marginBottom: 20, color: Colors.primary }}>
+          {isSignUp ? 'Create Account' : 'Login'}
+        </Text>
+        
         <TextInput
           placeholder="Email"
           value={email}
@@ -145,6 +173,7 @@ export default function TabLayout() {
           autoCapitalize="none"
           style={commonStyles.input}
         />
+        
         <TextInput
           placeholder="Password"
           value={password}
@@ -152,10 +181,36 @@ export default function TabLayout() {
           secureTextEntry
           style={commonStyles.input}
         />
+        
         {error && <Text style={{ color: 'red', marginBottom: 10 }}>{error}</Text>}
-        <Button title="Login" onPress={handleLogin} />
-        <Button title="Continue as Guest" onPress={handleGuestLogin} />
-      </View>*/
+        
+        <TouchableOpacity 
+          style={commonStyles.button}
+          onPress={handleLogin}
+          disabled={loading}
+        >
+          <Text style={commonStyles.buttonText}>
+            {loading ? 'Processing...' : (isSignUp ? 'Sign Up' : 'Login')}
+          </Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity 
+          style={[commonStyles.button, { backgroundColor: '#6c757d', marginTop: 10 }]}
+          onPress={handleGuestLogin}
+          disabled={loading}
+        >
+          <Text style={commonStyles.buttonText}>Continue as Guest</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity
+          style={{ marginTop: 20 }}
+          onPress={() => setIsSignUp(!isSignUp)}
+        >
+          <Text style={{ color: Colors.primary }}>
+            {isSignUp ? 'Already have an account? Log in' : 'Need an account? Sign up'}
+          </Text>
+        </TouchableOpacity>
+      </View>
     );
   }
 
