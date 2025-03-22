@@ -63,6 +63,7 @@ export default function TabLayout() {
   const [error, setError] = useState<string | null>(null);
   const [userSettings, setUserSettings] = useState<UserSettings | null>(null);
   const [isSignUp, setIsSignUp] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(false);
   
   // Check for existing session on load
   useEffect(() => {
@@ -93,6 +94,24 @@ export default function TabLayout() {
         });
     }
   }, [session]);
+
+  // Load dark mode settings
+  useEffect(() => {
+    const loadDarkModeSetting = async () => {
+      const storedDarkMode = await AsyncStorage.getItem('darkMode');
+      if (storedDarkMode !== null) {
+        setIsDarkMode(JSON.parse(storedDarkMode));
+      }
+    };
+    
+    loadDarkModeSetting();
+    
+    // Set up interval to check for dark mode changes
+    const intervalId = setInterval(loadDarkModeSetting, 1000);
+    
+    // Clean up interval on component unmount
+    return () => clearInterval(intervalId);
+  }, []);
 
   const handleLogin = async () => {
     try {
@@ -228,15 +247,23 @@ export default function TabLayout() {
     <Tabs
       screenOptions={{
         tabBarActiveTintColor: Colors.primary,
+        tabBarInactiveTintColor: isDarkMode ? '#999' : '#666',
         headerShown: false,
         tabBarButton: HapticTab,
-        tabBarBackground: TabBarBackground,
+        tabBarBackground: () => <TabBarBackground isDarkMode={isDarkMode} />,
         tabBarStyle: Platform.select({
           ios: {
             // Use a transparent background on iOS to show the blur effect
             position: 'absolute',
+            backgroundColor: isDarkMode ? '#1E1E1E' : undefined,
+            borderTopColor: isDarkMode ? '#2f2e2e' : '#e1e4e8',
+            borderTopWidth: 1,
           },
-          default: {},
+          default: {
+            backgroundColor: isDarkMode ? '#1E1E1E' : '#fff',
+            borderTopColor: isDarkMode ? '#2f2e2e' : '#e1e4e8',
+            borderTopWidth: 1,
+          },
         }),
       }}>
       <Tabs.Screen
