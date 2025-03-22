@@ -1,4 +1,4 @@
-# Tinnitus Management App 🎧
+# Tinytus
 
 A mobile application developed during HackHPI 2025 to help people manage and track their tinnitus symptoms.
 
