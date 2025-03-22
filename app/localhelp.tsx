@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Text, View, FlatList, StyleSheet, TextInput, Button, Keyboard, ScrollView } from 'react-native';
 import React, { useState } from 'react';
-import { Text, View, FlatList, StyleSheet, TextInput, Button, Keyboard, ScrollView, SafeAreaView } from 'react-native';
+import { Text, View, StyleSheet, TextInput, Button, Keyboard, ScrollView, SafeAreaView, TouchableOpacity, Linking } from 'react-native';
 import { Colors } from './theme.js';
 
 const berlinDoctors = [
@@ -79,6 +79,10 @@ export default function LocalHelp() {
   },);
 
   const themeStyles = isDarkMode ? darkStyles : lightStyles;
+  
+  const handleLinkPress = (url: string) => {
+    Linking.openURL(url);
+  };
 
   return (
     <SafeAreaView style={themeStyles.mainContainer}>
@@ -121,19 +125,20 @@ export default function LocalHelp() {
               <>
                 <Text style={themeStyles.sectionTitle}>Websites</Text>
                 {locations.map((location) => (
-                  <View key={location.id} style={themeStyles.item}>
-                    <Text style={themeStyles.name}>{location.name}</Text>
-                  </View>
+                  <TouchableOpacity key={location.id} onPress={() => handleLinkPress(location.name)} style={themeStyles.item}>
+                    <Text style={themeStyles.link}>{location.name}</Text>
+                  </TouchableOpacity>
                 ))}
                 {locations.length === 0 && (
                   <Text style={themeStyles.noResults}>No websites found</Text>
                 )}
               </>
             )}
-            {locations.length > 0 && food.length > 0 && (
-              <View style={themeStyles.separator} />
-            )}
-            {food.length > 0 && (
+            {/* Commenting out the food category */}
+            {/* {locations.length > 0 && food.length > 0 && (
+              <View style={styles.separator} />
+            )} */}
+            {/* {food.length > 0 && (
               <>
                 <Text style={themeStyles.sectionTitle}>Food</Text>
                 {food.map((foodItem) => (
@@ -145,7 +150,7 @@ export default function LocalHelp() {
                   <Text style={themeStyles.noResults}>No food items found</Text>
                 )}
               </>
-            )}
+            )} */}
             {(doctors.length > 0 || locations.length > 0 || food.length > 0) && (
               <View style={themeStyles.separator} />
             )}
@@ -157,32 +162,39 @@ export default function LocalHelp() {
 }
 
 const lightStyles = StyleSheet.create({
-  scrollContainer: { flexGrow: 1 },
+  scrollContainer: { flexGrow: 1, paddingTop: 15 },
+  mainContainer: { backgroundColor: '#fff', flex: 1 },
   container: { flex: 1, backgroundColor: '#fff' },
-  searchContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  searchContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 16 },
   listContainer: { flex: 2, paddingHorizontal: 16 },
-  footer: { flex: 0.5, justifyContent: 'center', alignItems: 'center', borderTopWidth: 1, borderTopColor: '#ccc' },
   input: { height: 40, borderColor: '#ccc', borderWidth: 1, marginBottom: 16, paddingHorizontal: 8, width: '80%' },
   item: { padding: 16, borderBottomWidth: 0, flexDirection: 'row', alignItems: 'center' },
   name: { fontSize: 18, fontWeight: 'bold' },
-  phone: { fontSize: 16, color: '#555' },
+  phone: { fontSize: 16, color: '#555', marginLeft: 10 },
+  link: { fontSize: 18, color: '#1e90ff', textDecorationLine: 'underline' },
   noResults: { textAlign: 'center', marginTop: 16, fontSize: 16, color: '#555' },
   sectionTitle: { fontSize: 20, fontWeight: 'bold', marginTop: 16, marginBottom: 8 },
-  footerText: { fontSize: 16, color: '#555' },
-  separator: { height: 2, backgroundColor: '#888', marginVertical: 16 }
+  separator: { height: 2, backgroundColor: '#888', marginVertical: 16 },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#e1e4e8', backgroundColor: '#fff' },
+  title: { fontSize: 20, fontWeight: 'bold', color: Colors.primary },
+  explanationText: { fontSize: 16, color: '#555', marginBottom: 16, textAlign: 'center' },
 });
 
 const darkStyles = StyleSheet.create({
-  scrollContainer: { flexGrow: 1 },
-  container: { flex: 1, backgroundColor: '#1E1E1E' },
-  searchContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  scrollContainer: { flexGrow: 1, paddingTop: 15 },
+  mainContainer: { backgroundColor: '#fff', flex: 1 },
+  container: { flex: 1, backgroundColor: '#fff' },
+  searchContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 16 },
   listContainer: { flex: 2, paddingHorizontal: 16 },
-  footer: { flex: 0.5, justifyContent: 'center', alignItems: 'center', borderTopWidth: 1, borderTopColor: '#1E1E1E' },
-  input: { height: 40, borderColor: '#1E1E1E', borderWidth: 1, marginBottom: 16, paddingHorizontal: 8, width: '80%' },
+  input: { height: 40, borderColor: '#ccc', borderWidth: 1, marginBottom: 16, paddingHorizontal: 8, width: '80%' },
   item: { padding: 16, borderBottomWidth: 0, flexDirection: 'row', alignItems: 'center' },
   name: { fontSize: 18, fontWeight: 'bold' },
-  phone: { fontSize: 16, color: '#fff' },
-  noResults: { textAlign: 'center', marginTop: 16, fontSize: 16, color: '#fff' },
+  phone: { fontSize: 16, color: '#555', marginLeft: 10 },
+  link: { fontSize: 18, color: '#1e90ff', textDecorationLine: 'underline' },
+  noResults: { textAlign: 'center', marginTop: 16, fontSize: 16, color: '#555' },
   sectionTitle: { fontSize: 20, fontWeight: 'bold', marginTop: 16, marginBottom: 8 },
-  footerText: { fontSize: 16, color: '#fff' },
-  separator: { height: 2, backgroundColor: '#1E1E1E', marginVertical: 16 }
+  separator: { height: 2, backgroundColor: '#888', marginVertical: 16 },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#e1e4e8', backgroundColor: '#fff' },
+  title: { fontSize: 20, fontWeight: 'bold', color: Colors.primary },
+  explanationText: { fontSize: 16, color: '#555', marginBottom: 16, textAlign: 'center' },
+});
