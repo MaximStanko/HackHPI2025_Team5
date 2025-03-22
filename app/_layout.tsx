@@ -14,8 +14,12 @@ import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
 import { commonStyles } from './styles.js';
 import { Colors } from './theme.js';
 
-import { supabase, createOrLoginUser, getUserSettings } from '@/utils/supabase';
-import { Session } from '@supabase/supabase-js';
+import { createOrLoginUser, getUserSettings } from '@/utils/supabase';
+import { supabase } from '../lib/supabase'
+import Auth from '../components/Auth'
+import Account from '../components/Account'
+import { Session } from '@supabase/supabase-js'
+
 
 type UserSession = {
   user: {
@@ -33,6 +37,21 @@ type UserSettings = {
 };
 
 export default function TabLayout() {
+  //supabase
+  const [session2, setSession2] = useState<Session | null>(null)
+  
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession2(session)
+    })
+
+    supabase.auth.onAuthStateChange((_event, session) => {
+      setSession2(session)
+    })
+  }, [])
+  
+  //tab layout
+
   const colorScheme = useColorScheme();
   const [session, setSession] = useState<UserSession | null>(null);
   const [loading, setLoading] = useState(false);
@@ -44,7 +63,7 @@ export default function TabLayout() {
   // Load user settings when session changes
   useEffect(() => {
     if (session?.user) {
-      getUserSettings(session.user.id)
+      getUserSettings(session.user.id.toString())
         .then(settings => {
           setUserSettings(settings);
         })
@@ -117,7 +136,8 @@ export default function TabLayout() {
 
   if (!session) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+      session2 && session2.user ? <Account key={session2.user.id} session={session2} /> : <Auth />
+      /*<View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
         <TextInput
           placeholder="Email"
           value={email}
@@ -135,7 +155,7 @@ export default function TabLayout() {
         {error && <Text style={{ color: 'red', marginBottom: 10 }}>{error}</Text>}
         <Button title="Login" onPress={handleLogin} />
         <Button title="Continue as Guest" onPress={handleGuestLogin} />
-      </View>
+      </View>*/
     );
   }
 
