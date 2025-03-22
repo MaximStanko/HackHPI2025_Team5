@@ -1,14 +1,6 @@
 import React, { useState } from 'react';
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Switch } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
-=======
-import { View, Text, StyleSheet, TouchableOpacity, Picker, ScrollView, Switch } from 'react-native';
->>>>>>> Stashed changes
-=======
-import { View, Text, StyleSheet, TouchableOpacity, Picker, ScrollView, Switch } from 'react-native';
->>>>>>> Stashed changes
 import Ionicons from '@expo/vector-icons/Ionicons';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
