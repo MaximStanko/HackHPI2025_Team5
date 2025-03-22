@@ -19,7 +19,7 @@ import { supabase } from '../lib/supabase'
 import Auth from '../components/Auth'
 import Account from '../components/Account'
 import { Session } from '@supabase/supabase-js'
-
+import { storage } from '@/utils/storage';
 
 type UserSession = {
   user: {
@@ -108,11 +108,8 @@ export default function TabLayout() {
       if (response.error) throw response.error;
       
       if (response.data.session) {
-        // Store user session
-        if (Platform.OS === 'web') {
-          localStorage.setItem('session', JSON.stringify(response.data.session));
-        }
-        
+        // Store user session with cross-platform storage
+        await storage.setItem('session', JSON.stringify(response.data.session));
         setSession(response.data.session);
       }
     } catch (error: any) {
@@ -131,11 +128,8 @@ export default function TabLayout() {
       if (response.error) throw response.error;
       
       if (response.data.session) {
-        // Store guest session
-        if (Platform.OS === 'web') {
-          localStorage.setItem('session', JSON.stringify(response.data.session));
-        }
-        
+        // Store guest session with cross-platform storage
+        await storage.setItem('session', JSON.stringify(response.data.session));
         setSession(response.data.session);
       }
     } catch (error: any) {
@@ -148,6 +142,7 @@ export default function TabLayout() {
 
   const handleLogout = async () => {
     await signOut();
+    await storage.removeItem('session');
     setSession(null);
   };
 

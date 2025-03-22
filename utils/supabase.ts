@@ -237,9 +237,10 @@ const createDefaultSettings = async (userId: string) => {
   return data || settings;
 };
 
-// Updated Post-related functions
+// Updated getAllPosts with better error handling
 export const getAllPosts = async (sortBy = 'newest') => {
   try {
+    console.log("Getting all posts with sort:", sortBy);
     let query = supabase
       .from('posts')
       .select(`
@@ -262,13 +263,17 @@ export const getAllPosts = async (sortBy = 'newest') => {
     } else if (sortBy === 'most_votes') {
       query = query.order('upvotes', { ascending: false });
     } else if (sortBy === 'controversial') {
-      // Sort by posts with closest upvote/downvote ratio to 1 (but with significant votes)
       query = query.order('upvotes', { ascending: false }).order('downvotes', { ascending: false });
     }
     
-    const { data, error } = await query;
-      
-    if (error) throw error;
+    const { data, error, status } = await query;
+    
+    if (error) {
+      console.error("Supabase error getting posts:", error, "Status:", status);
+      throw error;
+    }
+    
+    console.log(`Retrieved ${data?.length || 0} posts`);
     return data || [];
   } catch (error) {
     console.error('Error fetching posts:', error);
@@ -308,24 +313,42 @@ export const createPost = async (userId: number, postData: {
 // Simplify the votePost function to make it more reliable
 export const votePost = async (userId: number, postId: number, voteType: 'up' | 'down') => {
   try {
+    console.log(`Processing vote: user=${userId}, post=${postId}, type=${voteType}`);
+    
     // Check if user already voted on this post
-    const { data: existingVote, error: checkError } = await supabase
+    const { data: existingVote, error: checkError, status: checkStatus } = await supabase
       .from('post_votes')
       .select('id, vote_type')
       .eq('user_id', userId)
       .eq('post_id', postId)
       .maybeSingle();
     
-    if (checkError) throw checkError;
+    if (checkError) {
+      console.error("Error checking existing vote:", checkError, "Status:", checkStatus);
+      // Check if the table exists
+      if (checkStatus === 406) {
+        console.error("Table post_votes may not exist - creating vote tables");
+        // Try to create the table - this would require admin privileges 
+        // Consider a fallback mechanism here
+      }
+      throw checkError;
+    }
+    
+    console.log("Existing vote check result:", existingVote);
     
     // Get current vote counts
-    const { data: currentPost, error: postError } = await supabase
+    const { data: currentPost, error: postError, status: postStatus } = await supabase
       .from('posts')
       .select('upvotes, downvotes')
       .eq('id', postId)
       .single();
     
-    if (postError) throw postError;
+    if (postError) {
+      console.error("Error getting current post votes:", postError, "Status:", postStatus);
+      throw postError;
+    }
+    
+    console.log("Current post votes:", currentPost);
     
     let newUpvotes = currentPost.upvotes || 0;
     let newDownvotes = currentPost.downvotes || 0;
@@ -381,13 +404,25 @@ export const votePost = async (userId: number, postId: number, voteType: 'up' | 
     }
     
     // Update post with new vote counts
-    await supabase
+    const { error: updateError, status: updateStatus } = await supabase
       .from('posts')
       .update({ 
         upvotes: newUpvotes, 
         downvotes: newDownvotes 
       })
       .eq('id', postId);
+    
+    if (updateError) {
+      console.error("Error updating post votes:", updateError, "Status:", updateStatus);
+      throw updateError;
+    }
+    
+    console.log("Vote processed successfully:", { 
+      voted: resultVoteType !== null, 
+      voteType: resultVoteType,
+      upvotes: newUpvotes,
+      downvotes: newDownvotes
+    });
     
     return { 
       voted: resultVoteType !== null, 

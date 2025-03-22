@@ -16,6 +16,7 @@ import { getUserSettings, updateUserSettings } from '@/utils/supabase';
 import { Colors } from './theme.js';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
+import { storage } from '@/utils/storage';
 
 export default function SettingsScreen() {
   const [settings, setSettings] = useState({
@@ -31,7 +32,7 @@ export default function SettingsScreen() {
   useEffect(() => {
     const getUserData = async () => {
       try {
-        const sessionStr = await localStorage.getItem('session');
+        const sessionStr = await storage.getItem('session');
         if (sessionStr) {
           const session = JSON.parse(sessionStr);
           setUserId(session?.user?.id);
