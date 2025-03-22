@@ -1,6 +1,7 @@
 import { Tabs } from 'expo-router';
 import React, { useState, useEffect } from 'react';
-import { Platform, View, TextInput, Button, Text, TouchableOpacity } from 'react-native';
+import { Platform, View, TextInput, Button, Text, TouchableOpacity, SafeAreaView, StyleSheet } from 'react-native';
+import { Image } from 'expo-image';
 
 import { HapticTab } from '@/components/HapticTab';
 import { IconSymbol } from '@/components/ui/IconSymbol';
@@ -20,6 +21,8 @@ import Auth from '../components/Auth'
 import Account from '../components/Account'
 import { Session } from '@supabase/supabase-js'
 import { storage } from '@/utils/storage';
+
+import FontAwesome from '@expo/vector-icons/FontAwesome';
 
 type UserSession = {
   user: {
@@ -156,6 +159,17 @@ export default function TabLayout() {
 
   if (!session) {
     return (
+      <SafeAreaView style={styles.container}>
+      <View style={styles.header}>
+        <Image
+          style={styles.image}
+          source={require("./images/logo.png")}
+          placeholder='logo'
+          contentFit="contain"
+          transition={1000}
+        />
+        <Text style={styles.title}>Tinytus</Text>
+      </View>
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 }}>
         <Text style={{ fontSize: 24, fontWeight: 'bold', marginBottom: 20, color: Colors.primary }}>
           {isSignUp ? 'Create Account' : 'Login'}
@@ -206,6 +220,7 @@ export default function TabLayout() {
           </Text>
         </TouchableOpacity>
       </View>
+      </SafeAreaView>
     );
   }
 
@@ -268,3 +283,215 @@ export default function TabLayout() {
     </Tabs>
   );
 }
+
+const styles = StyleSheet.create({
+  image: {
+    width: 60,
+    height: 60,
+  },
+  container: {
+    flex: 1,
+    backgroundColor: '#f8f9fa',
+  },
+  header: {
+    flexDirection: 'row',
+    //justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e1e4e8',
+    backgroundColor: '#fff',
+  },
+  title: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: Colors.primary,
+    paddingLeft: 15,
+  },
+  sortButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    backgroundColor: '#f1f3f5',
+  },
+  sortButtonText: {
+    fontSize: 12,
+    color: '#666',
+    marginLeft: 4,
+  },
+  sortPickerContainer: {
+    backgroundColor: 'white',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e1e4e8',
+    paddingVertical: 8,
+  },
+  sortOption: {
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+  },
+  selectedSortOption: {
+    backgroundColor: '#f1f3f5',
+  },
+  sortOptionText: {
+    fontSize: 14,
+    color: '#333',
+  },
+  selectedSortOptionText: {
+    fontWeight: 'bold',
+    color: Colors.primary,
+  },
+  categoryContainer: {
+    flexDirection: 'row',
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e1e4e8',
+    minHeight: 75,
+    maxHeight: 75,
+  },
+  categoryScrollContainer: {
+    paddingLeft: 4,
+    paddingRight: 4,
+  },
+  categoryButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    marginHorizontal: 4,
+    marginVertical: 8,
+    borderRadius: 20,
+    backgroundColor: '#f1f3f5',
+    minWidth: 80,
+    alignItems: 'center',
+  },
+  selectedCategoryButton: {
+    backgroundColor: Colors.primary,
+    marginVertical: 8,
+  },
+  categoryText: {
+    color: '#333',
+    fontWeight: '500',
+  },
+  selectedCategoryText: {
+    color: '#fff',
+  },
+  loader: {
+    marginTop: 20,
+  },
+  listContainer: {
+    padding: 12,
+  },
+  articleCard: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    marginBottom: 16,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  articleImage: {
+    width: '100%',
+    height: 180,
+    resizeMode: 'cover',
+  },
+  articleContent: {
+    padding: 16,
+  },
+  articleCategory: {
+    color: Colors.primary,
+    fontWeight: '500',
+    fontSize: 12,
+    marginBottom: 4,
+  },
+  articleTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 4,
+    color: '#333',
+  },
+  articleAuthors: {
+    fontSize: 13,
+    fontStyle: 'italic',
+    color: '#666',
+    marginBottom: 8,
+  },
+  articleSummary: {
+    fontSize: 14,
+    color: '#666',
+    lineHeight: 20,
+    marginBottom: 16,
+  },
+  articleFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderTopWidth: 1,
+    borderTopColor: '#f1f3f5',
+    paddingTop: 12,
+  },
+  articleMetadata: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  articleDate: {
+    fontSize: 12,
+    color: '#999',
+    marginRight: 12,
+  },
+  sourceLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    backgroundColor: '#f8f9fa',
+    borderRadius: 12,
+  },
+  sourceLinkText: {
+    fontSize: 12,
+    color: Colors.primary,
+    fontWeight: '500',
+    marginLeft: 4,
+  },
+  voteContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f8f9fa',
+    borderRadius: 16,
+    paddingHorizontal: 4,
+  },
+  voteButton: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  upvotedButton: {
+    backgroundColor: '#4caf50',
+  },
+  downvotedButton: {
+    backgroundColor: '#f44336',
+  },
+  voteScore: {
+    fontWeight: 'bold',
+    marginHorizontal: 4,
+    minWidth: 20,
+    textAlign: 'center',
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 40,
+  },
+  emptyText: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+  },
+});

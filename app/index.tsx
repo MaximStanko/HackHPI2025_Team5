@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase'
 import Auth from '../components/Auth'
 import Account from '../components/Account'
 import { Session } from '@supabase/supabase-js'
+import { Colors } from './theme.js';
 
 
 export default function QuestionnaireScreen() {
@@ -117,10 +118,14 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 20,
     textAlign: 'center',
+    color: Colors.primary,
   },
   label: {
     fontSize: 16,
     marginBottom: 20,
+    marginLeft: 'auto',
+    marginRight: 'auto',
+    fontWeight: 'bold',
   },
   input: {
     borderWidth: 1,
