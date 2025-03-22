@@ -379,6 +379,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderBottomWidth: 1,
     borderBottomColor: '#e1e4e8',
+    minHeight: 75,
+    maxHeight: 75,
   },
   categoryScrollContainer: {
     paddingLeft: 4,
@@ -388,6 +390,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
     marginHorizontal: 4,
+    marginVertical: 8,
     borderRadius: 20,
     backgroundColor: '#f1f3f5',
     minWidth: 80,
@@ -395,6 +398,7 @@ const styles = StyleSheet.create({
   },
   selectedCategoryButton: {
     backgroundColor: Colors.primary,
+    marginVertical: 8,
   },
   categoryText: {
     color: '#333',

@@ -158,21 +158,21 @@ export default function TabLayout() {
         name="index"
         options={{
           title: 'Questionnaire',
-          tabBarIcon: ({ color }) => <FontAwesome5 name="clipboard-list" size={28} color={color} />,
+          tabBarIcon: ({ color }) => <FontAwesome5 name="clipboard-list" size={24} color={color} />,
         }}
       />
       <Tabs.Screen
         name="community"
         options={{
           title: 'Community',
-          tabBarIcon: ({ color }) => <FontAwesome6 name="people-group" size={28} color={color} />,
+          tabBarIcon: ({ color }) => <FontAwesome6 name="people-group" size={24} color={color} />,
         }}
       />
       <Tabs.Screen
         name = "scientific"
         options={{
-          title: 'News (scientific)',
-          tabBarIcon: ({ color }) => <FontAwesome5 name="newspaper" size={28} color={color} />,
+          title: 'News',
+          tabBarIcon: ({ color }) => <FontAwesome5 name="newspaper" size={24} color={color} />,
         }}
       />
         
@@ -180,14 +180,14 @@ export default function TabLayout() {
         name="betterhelp"
         options={{
           title: 'Betterhelp',
-          tabBarIcon: ({ color }) => <FontAwesome5 name="bed" size={28} color={color} />, //<IconSymbol size={28} name="chevron.right" color={color} />,
+          tabBarIcon: ({ color }) => <FontAwesome5 name="bed" size={24} color={color} />,
         }}
       />
       <Tabs.Screen
         name="settings"
         options={{
           title: 'Settings',
-          tabBarIcon: ({ color }) => <Ionicons name="settings-sharp" size={28} color={color} />,
+          tabBarIcon: ({ color }) => <Ionicons name="settings-sharp" size={24} color={color} />,
         }}
         listeners={{
           tabPress: () => {
