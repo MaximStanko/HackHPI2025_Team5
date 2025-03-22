@@ -178,6 +178,7 @@ const lightStyles = StyleSheet.create({
   inputContainer: {
     flex: 1,
     justifyContent: 'center',
+    alignItems: 'center', // Center the content horizontally
     padding: 20,
     maxHeight: 100,
   },
@@ -195,12 +196,17 @@ const lightStyles = StyleSheet.create({
     padding: 10,
     backgroundColor: '#fff',
     marginBottom: 20,
+    width: '100%',
+    maxWidth: 500, // Maximum width on larger screens
+    alignSelf: 'center', // Center the input
   },
   picker: {
     height: 50,
     width: '100%',
+    maxWidth: 500, // Maximum width on larger screens
     marginBottom: 20,
     backgroundColor: '#fff',
+    alignSelf: 'center', // Center the picker
   },
   button: {
     backgroundColor: '#4A90E2',
@@ -270,6 +276,7 @@ const darkStyles = StyleSheet.create({
   inputContainer: {
     flex: 1,
     justifyContent: 'center',
+    alignItems: 'center', // Center the content horizontally
     padding: 20,
     maxHeight: 100,
   },
@@ -289,13 +296,18 @@ const darkStyles = StyleSheet.create({
     backgroundColor: '#444',
     marginBottom: 20,
     color: '#fff',
+    width: '100%',
+    maxWidth: 500, // Maximum width on larger screens
+    alignSelf: 'center', // Center the input
   },
   picker: {
     height: 50,
     width: '100%',
+    maxWidth: 500, // Maximum width on larger screens
     marginBottom: 20,
     backgroundColor: '#444',
     color: '#fff',
+    alignSelf: 'center', // Center the picker
   },
   button: {
     backgroundColor: '#555',
