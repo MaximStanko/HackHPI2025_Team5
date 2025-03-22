@@ -352,7 +352,7 @@ export default function CommunityScreen() {
   return (
     <SafeAreaView style={themeStyles.container}>
       <View style={themeStyles.header}>
-        <Text style={themeStyles.title} numberOfLines={1} ellipsizeMode="tail">Tinnitus Community</Text>
+        <Text style={themeStyles.title} numberOfLines={1} ellipsizeMode="tail">Community</Text>
         
         <View style={themeStyles.headerButtons}>
           <TouchableOpacity 

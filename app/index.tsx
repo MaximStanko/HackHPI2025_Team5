@@ -5,6 +5,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../lib/supabase';
 import { Session } from '@supabase/supabase-js';
 import { Colors } from './theme.js';
+import FontAwesome from '@expo/vector-icons/FontAwesome';
 
 export default function QuestionnaireScreen() {
   // supabase
@@ -35,8 +36,8 @@ export default function QuestionnaireScreen() {
 
   const [responses, setResponses] = useState({});
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [isAnonymous, setIsAnonymous] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const [progressPercentage, setProgressPercentage] = useState(0);
 
   const handleChange = (key, value) => {
     setResponses({ ...responses, [key]: value });
@@ -45,33 +46,30 @@ export default function QuestionnaireScreen() {
   const handleNext = () => {
     if (currentQuestionIndex < questions.length - 1) {
       setCurrentQuestionIndex(currentQuestionIndex + 1);
+      
+      // Update progress
+      const newProgress = ((currentQuestionIndex + 1) / (questions.length - 1)) * 100;
+      setProgressPercentage(newProgress);
     }
     if (currentQuestionIndex === questions.length - 2) {
       console.log(responses);
+      // Here you would typically save the responses to your database
     }
   };
 
   const handlePrev = () => {
     if (currentQuestionIndex > 0) {
       setCurrentQuestionIndex(currentQuestionIndex - 1);
+      
+      // Update progress
+      const newProgress = ((currentQuestionIndex - 1) / (questions.length - 1)) * 100;
+      setProgressPercentage(newProgress);
     }
   };
 
   const currentQuestion = questions[currentQuestionIndex];
 
-  const loadSettings = async () => {
-    const storedDarkMode = await AsyncStorage.getItem('darkMode');
-    if (storedDarkMode !== null) {
-      setIsDarkMode(JSON.parse(storedDarkMode));
-    }
-  };
-
-  useEffect(() => {
-    loadSettings();
-  }, []);
-
-  const themeStyles = isDarkMode ? darkStyles : lightStyles;
-
+  // Load dark mode setting once when component mounts
   useEffect(() => {
     const loadSettings = async () => {
       const storedDarkMode = await AsyncStorage.getItem('darkMode');
@@ -79,28 +77,49 @@ export default function QuestionnaireScreen() {
         setIsDarkMode(JSON.parse(storedDarkMode));
       }
     };
+    
     loadSettings();
+    
+    // Set up a listener for changes to dark mode
+    const intervalId = setInterval(loadSettings, 1000);
+    
+    // Clean up interval on component unmount
+    return () => clearInterval(intervalId);
   }, []);
 
-  const toggleDarkMode = async (value) => {
-    setIsDarkMode(value);
-    await AsyncStorage.setItem('darkMode', JSON.stringify(value));
-  };
-
-  useEffect(() => {
-    setInterval(() => {
-      loadSettings();
-    }, 100); // 1000 Millisekunden = 1 Sekunde
-  });
+  const themeStyles = isDarkMode ? darkStyles : lightStyles;
 
   return (
-    <SafeAreaView style={themeStyles.mainContainer}>
+    <SafeAreaView style={themeStyles.container}>
       <View style={themeStyles.header}>
         <Text style={themeStyles.title}>Questionnaire</Text>
+        <View style={themeStyles.progressBar}>
+          <View 
+            style={[
+              themeStyles.progressFill, 
+              { width: `${progressPercentage}%` }
+            ]} 
+          />
+        </View>
       </View>
+      
       <ScrollView contentContainerStyle={themeStyles.scrollContainer}>
-        <View style={themeStyles.container}>
-          <Text style={themeStyles.label}>{currentQuestion.text}</Text>
+        <View style={themeStyles.questionCard}>
+          <View style={themeStyles.questionHeader}>
+            <Text style={themeStyles.questionNumber}>
+              Question {currentQuestionIndex + 1} of {questions.length - 1}
+            </Text>
+            {currentQuestion.type !== 'submitted' && (
+              <FontAwesome 
+                name={getQuestionIcon(currentQuestion.type)} 
+                size={20} 
+                color={isDarkMode ? '#ccc' : Colors.primary} 
+              />
+            )}
+          </View>
+          
+          <Text style={themeStyles.questionText}>{currentQuestion.text}</Text>
+          
           <View style={themeStyles.inputContainer}>
             {currentQuestion.type === 'input' ? (
               <TextInput
@@ -108,35 +127,64 @@ export default function QuestionnaireScreen() {
                 keyboardType={currentQuestion.keyboardType || 'default'}
                 value={responses[currentQuestion.key] || ''}
                 onChangeText={(text) => handleChange(currentQuestion.key, text)}
+                placeholderTextColor={isDarkMode ? '#999' : '#999'}
               />
             ) : currentQuestion.type === 'picker' ? (
-              <Picker
-                selectedValue={responses[currentQuestion.key] || ''}
-                style={themeStyles.picker}
-                onValueChange={(itemValue) => handleChange(currentQuestion.key, itemValue)}
-              >
-                <Picker.Item label="Select an option" value="" />
-                {currentQuestion.options.map((option) => (
-                  <Picker.Item key={option} label={option} value={option} />
-                ))}
-              </Picker>
+              <View style={themeStyles.pickerContainer}>
+                <Picker
+                  selectedValue={responses[currentQuestion.key] || ''}
+                  style={themeStyles.picker}
+                  onValueChange={(itemValue) => handleChange(currentQuestion.key, itemValue)}
+                  dropdownIconColor={isDarkMode ? '#fff' : '#333'}
+                  mode="dropdown"
+                >
+                  <Picker.Item 
+                    label="Select an option" 
+                    value="" 
+                    color={isDarkMode ? '#999' : '#999'} 
+                  />
+                  {currentQuestion.options.map((option) => (
+                    <Picker.Item 
+                      key={option} 
+                      label={option} 
+                      value={option} 
+                      color={isDarkMode ? '#fff' : '#333'}
+                    />
+                  ))}
+                </Picker>
+              </View>
+            ) : currentQuestion.type === 'submitted' ? (
+              <View style={themeStyles.submittedContainer}>
+                <FontAwesome name="check-circle" size={60} color={isDarkMode ? '#4caf50' : Colors.primary} />
+                <Text style={themeStyles.submittedText}>
+                  Thank you for completing the questionnaire!
+                </Text>
+              </View>
             ) : null}
           </View>
+          
           <View style={themeStyles.buttonContainer}>
             <TouchableOpacity
-              style={currentQuestionIndex === 0 ? themeStyles.buttonDisabled : themeStyles.button}
+              style={[
+                themeStyles.button,
+                currentQuestionIndex === 0 && themeStyles.buttonDisabled
+              ]}
               onPress={handlePrev}
               disabled={currentQuestionIndex === 0}
             >
               <Text style={themeStyles.buttonText}>Previous</Text>
             </TouchableOpacity>
-            <TouchableOpacity
-              style={currentQuestion.key === 'submitted' ? themeStyles.buttonDisabled : themeStyles.button}
-              onPress={handleNext}
-              disabled={currentQuestion.key === 'submitted'}
-            >
-              <Text style={themeStyles.buttonText}>Next</Text>
-            </TouchableOpacity>
+            
+            {currentQuestion.type !== 'submitted' && (
+              <TouchableOpacity
+                style={themeStyles.button}
+                onPress={handleNext}
+              >
+                <Text style={themeStyles.buttonText}>
+                  {currentQuestionIndex === questions.length - 2 ? 'Submit' : 'Next'}
+                </Text>
+              </TouchableOpacity>
+            )}
           </View>
         </View>
       </ScrollView>
@@ -144,19 +192,26 @@ export default function QuestionnaireScreen() {
   );
 }
 
+// Helper function to determine icon for question type
+function getQuestionIcon(type) {
+  switch (type) {
+    case 'input':
+      return 'keyboard-o';
+    case 'picker':
+      return 'list';
+    case 'submitted':
+      return 'check-circle';
+    default:
+      return 'question-circle';
+  }
+}
+
 const lightStyles = StyleSheet.create({
-  mainContainer: {
-    backgroundColor: '#fff',
+  container: {
     flex: 1,
-  },
-  scrollContainer: {
-    flexGrow: 1,
-    paddingTop: 15,
+    backgroundColor: '#f8f9fa',
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
@@ -167,178 +222,223 @@ const lightStyles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     color: Colors.primary,
+    marginBottom: 8,
   },
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    padding: 20,
+  progressBar: {
+    height: 4,
+    backgroundColor: '#e1e4e8',
+    borderRadius: 2,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    backgroundColor: Colors.primary,
+  },
+  scrollContainer: {
+    flexGrow: 1,
+    padding: 16,
+  },
+  questionCard: {
     backgroundColor: '#fff',
-    borderRadius: 10,
+    borderRadius: 12,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  questionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  questionNumber: {
+    fontSize: 14,
+    color: '#666',
+    fontWeight: '500',
+  },
+  questionText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 20,
   },
   inputContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center', // Center the content horizontally
-    padding: 20,
-    maxHeight: 100,
+    marginBottom: 24,
   },
-  label: {
-    fontSize: 16,
-    marginBottom: 20,
-    marginLeft: 'auto',
-    marginRight: 'auto',
-    fontWeight: 'bold',
+  pickerContainer: {
+    borderWidth: 1,
+    borderColor: '#e1e4e8',
+    borderRadius: 8,
+    overflow: 'hidden',
+    backgroundColor: '#f8f9fa',
   },
   input: {
     borderWidth: 1,
-    borderColor: '#ccc',
+    borderColor: '#e1e4e8',
     borderRadius: 8,
-    padding: 10,
-    backgroundColor: '#fff',
-    marginBottom: 20,
-    width: '100%',
-    maxWidth: 500, // Maximum width on larger screens
-    alignSelf: 'center', // Center the input
+    padding: 12,
+    fontSize: 16,
+    backgroundColor: '#f8f9fa',
+    color: '#333',
   },
   picker: {
     height: 50,
     width: '100%',
-    maxWidth: 500, // Maximum width on larger screens
-    marginBottom: 20,
-    backgroundColor: '#fff',
-    alignSelf: 'center', // Center the picker
+    color: '#333',
   },
-  button: {
-    backgroundColor: '#4A90E2',
-    paddingTop: 6,
-    paddingBottom: 6,
-    paddingRight: 10,
-    paddingLeft: 10,
-    margin: 10,
-    borderRadius: 10,
+  submittedContainer: {
     alignItems: 'center',
+    justifyContent: 'center',
+    padding: 20,
   },
-  buttonDisabled: {
-    backgroundColor: '#ccc',
-    paddingTop: 6,
-    paddingBottom: 6,
-    paddingRight: 10,
-    paddingLeft: 10,
-    margin: 10,
-    borderRadius: 10,
-    alignItems: 'center',
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 18,
+  submittedText: {
+    fontSize: 16,
+    color: '#333',
+    textAlign: 'center',
+    marginTop: 16,
     fontWeight: '500',
   },
   buttonContainer: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  button: {
+    backgroundColor: Colors.primary,
     paddingVertical: 12,
-    paddingHorizontal: 8,
-    marginLeft: 'auto',
-    marginRight: 'auto',
+    paddingHorizontal: 24,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: 120,
+  },
+  buttonDisabled: {
+    backgroundColor: '#ccc',
+  },
+  buttonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '500',
   },
 });
 
 const darkStyles = StyleSheet.create({
-  mainContainer: {
-    backgroundColor: '#333',
+  container: {
     flex: 1,
-  },
-  scrollContainer: {
-    flexGrow: 1,
-    paddingTop: 15,
+    backgroundColor: '#1E1E1E',
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#1e1e1e',
-    backgroundColor: '#333',
+    borderBottomColor: '#2f2e2e',
+    backgroundColor: '#1E1E1E',
   },
   title: {
     fontSize: 20,
     fontWeight: 'bold',
     color: '#fff',
+    marginBottom: 8,
   },
-  container: {
-    flex: 1,
-    justifyContent: 'center',
+  progressBar: {
+    height: 4,
+    backgroundColor: '#2f2e2e',
+    borderRadius: 2,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    backgroundColor: Colors.primary,
+  },
+  scrollContainer: {
+    flexGrow: 1,
+    padding: 16,
+  },
+  questionCard: {
+    backgroundColor: '#474747',
+    borderRadius: 12,
     padding: 20,
-    backgroundColor: '#333',
-    borderRadius: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  questionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  questionNumber: {
+    fontSize: 14,
+    color: '#ccc',
+    fontWeight: '500',
+  },
+  questionText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#fff',
+    marginBottom: 20,
   },
   inputContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center', // Center the content horizontally
-    padding: 20,
-    maxHeight: 100,
+    marginBottom: 24,
   },
-  label: {
-    fontSize: 16,
-    marginBottom: 20,
-    marginLeft: 'auto',
-    marginRight: 'auto',
-    fontWeight: 'bold',
-    color: '#ccc',
+  pickerContainer: {
+    borderWidth: 1,
+    borderColor: '#2f2e2e',
+    borderRadius: 8,
+    overflow: 'hidden',
+    backgroundColor: '#2f2e2e',
   },
   input: {
     borderWidth: 1,
-    borderColor: '#555',
+    borderColor: '#2f2e2e',
     borderRadius: 8,
-    padding: 10,
-    backgroundColor: '#444',
-    marginBottom: 20,
+    padding: 12,
+    fontSize: 16,
+    backgroundColor: '#2f2e2e',
     color: '#fff',
-    width: '100%',
-    maxWidth: 500, // Maximum width on larger screens
-    alignSelf: 'center', // Center the input
   },
   picker: {
     height: 50,
     width: '100%',
-    maxWidth: 500, // Maximum width on larger screens
-    marginBottom: 20,
-    backgroundColor: '#444',
     color: '#fff',
-    alignSelf: 'center', // Center the picker
+    backgroundColor: '#2f2e2e',
   },
-  button: {
-    backgroundColor: '#555',
-    paddingTop: 6,
-    paddingBottom: 6,
-    paddingRight: 10,
-    paddingLeft: 10,
-    margin: 10,
-    borderRadius: 10,
+  submittedContainer: {
     alignItems: 'center',
+    justifyContent: 'center',
+    padding: 20,
   },
-  buttonDisabled: {
-    backgroundColor: '#1E1E1E',
-    paddingTop: 6,
-    paddingBottom: 6,
-    paddingRight: 10,
-    paddingLeft: 10,
-    margin: 10,
-    borderRadius: 10,
-    alignItems: 'center',
-  },
-  buttonText: {
+  submittedText: {
+    fontSize: 16,
     color: '#fff',
-    fontSize: 18,
+    textAlign: 'center',
+    marginTop: 16,
     fontWeight: '500',
   },
   buttonContainer: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  button: {
+    backgroundColor: Colors.primary,
     paddingVertical: 12,
-    paddingHorizontal: 8,
-    marginLeft: 'auto',
-    marginRight: 'auto',
+    paddingHorizontal: 24,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: 120,
+  },
+  buttonDisabled: {
+    backgroundColor: '#1E1E1E',
+  },
+  buttonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '500',
   },
 });
