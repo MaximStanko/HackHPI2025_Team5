@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Text, View, FlatList, StyleSheet, TextInput, Button, Keyboard, ScrollView } from 'react-native';
+import { Text, View, FlatList, StyleSheet, TextInput, Button, Keyboard, ScrollView, SafeAreaView } from 'react-native';
+import { Colors } from './theme.js';
 
 const berlinDoctors = [
   { id: '1', name: 'Telefonseelsorge Deutschland', phone: '0800 111 0111' },
@@ -60,79 +61,89 @@ export default function BetterHelp() {
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.scrollContainer}>
-      <View style={styles.container}>
-        <View style={styles.searchContainer}>
-          <TextInput
-            style={styles.input}
-            placeholder="Enter city name"
-            value={city}
-            onChangeText={setCity}
-          />
-          <Button title="Search" onPress={handleSearch} />
-        </View>
-        <View style={styles.listContainer}>
-          {doctors.length > 0 && (
-            <>
-              <Text style={styles.sectionTitle}>Hotlines</Text>
-              {doctors.map((doctor) => (
-                <View key={doctor.id} style={styles.item}>
-                  <Text style={styles.name}>{doctor.name}</Text>
-                  <Text style={styles.phone}>{doctor.phone}</Text>
-                </View>
-              ))}
-              {doctors.length === 0 && (
-                <Text style={styles.noResults}>No doctors found</Text>
-              )}
-            </>
-          )}
-          {doctors.length > 0 && locations.length > 0 && (
-            <View style={styles.separator} />
-          )}
-          {locations.length > 0 && (
-            <>
-              <Text style={styles.sectionTitle}>Websites</Text>
-              {locations.map((location) => (
-                <View key={location.id} style={styles.item}>
-                  <Text style={styles.name}>{location.name}</Text>
-                </View>
-              ))}
-              {locations.length === 0 && (
-                <Text style={styles.noResults}>No locations found</Text>
-              )}
-            </>
-          )}
-          {locations.length > 0 && food.length > 0 && (
-            <View style={styles.separator} />
-          )}
-          {food.length > 0 && (
-            <>
-              <Text style={styles.sectionTitle}>Food</Text>
-              {food.map((foodItem) => (
-                <View key={foodItem.id} style={styles.item}>
-                  <Text style={styles.name}>{foodItem.name}</Text>
-                </View>
-              ))}
-              {food.length === 0 && (
-                <Text style={styles.noResults}>No food items found</Text>
-              )}
-            </>
-          )}
-          {(doctors.length > 0 || locations.length > 0 || food.length > 0) && (
-            <View style={styles.separator} />
-          )}
-        </View>
-        {/* <View style={styles.footer}>
-          <Text style={styles.footerText}>Footer content here</Text>
-        </View> */}
+    <SafeAreaView style={styles.mainContainer}>
+      <View style={styles.header}>
+        <Text style={styles.title}>Betterhelp</Text>
       </View>
-    </ScrollView>
+      <ScrollView contentContainerStyle={styles.scrollContainer}>
+        <View style={styles.container}>
+          <View style={styles.searchContainer}>
+            <TextInput
+              style={styles.input}
+              placeholder="Enter city name"
+              value={city}
+              onChangeText={setCity}
+            />
+            <Button title="Search" onPress={handleSearch} />
+          </View>
+          <View style={styles.listContainer}>
+            {doctors.length > 0 && (
+              <>
+                <Text style={styles.sectionTitle}>Hotlines</Text>
+                {doctors.map((doctor) => (
+                  <View key={doctor.id} style={styles.item}>
+                    <Text style={styles.name}>{doctor.name}</Text>
+                    <Text style={styles.phone}>{doctor.phone}</Text>
+                  </View>
+                ))}
+                {doctors.length === 0 && (
+                  <Text style={styles.noResults}>No doctors found</Text>
+                )}
+              </>
+            )}
+            {doctors.length > 0 && locations.length > 0 && (
+              <View style={styles.separator} />
+            )}
+            {locations.length > 0 && (
+              <>
+                <Text style={styles.sectionTitle}>Websites</Text>
+                {locations.map((location) => (
+                  <View key={location.id} style={styles.item}>
+                    <Text style={styles.name}>{location.name}</Text>
+                  </View>
+                ))}
+                {locations.length === 0 && (
+                  <Text style={styles.noResults}>No locations found</Text>
+                )}
+              </>
+            )}
+            {locations.length > 0 && food.length > 0 && (
+              <View style={styles.separator} />
+            )}
+            {food.length > 0 && (
+              <>
+                <Text style={styles.sectionTitle}>Food</Text>
+                {food.map((foodItem) => (
+                  <View key={foodItem.id} style={styles.item}>
+                    <Text style={styles.name}>{foodItem.name}</Text>
+                  </View>
+                ))}
+                {food.length === 0 && (
+                  <Text style={styles.noResults}>No food items found</Text>
+                )}
+              </>
+            )}
+            {(doctors.length > 0 || locations.length > 0 || food.length > 0) && (
+              <View style={styles.separator} />
+            )}
+          </View>
+          {/* <View style={styles.footer}>
+            <Text style={styles.footerText}>Footer content here</Text>
+          </View> */}
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   scrollContainer: {
     flexGrow: 1,
+    paddingTop: 15,
+  },
+  mainContainer: {
+    backgroundColor: '#fff',
+    flex: 1,
   },
   container: {
     flex: 1,
@@ -196,5 +207,20 @@ const styles = StyleSheet.create({
     height: 2, // Make the separator lines more distinct
     backgroundColor: '#888', // Darker color for better visibility
     marginVertical: 16,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e1e4e8',
+    backgroundColor: '#fff',
+  },
+  title: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: Colors.primary,
   },
 });
