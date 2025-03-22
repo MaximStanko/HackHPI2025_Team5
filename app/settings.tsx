@@ -164,10 +164,8 @@ export default function SettingsScreen() {
               trackColor={{ false: '#d3d3d3', true: Colors.primary }}
               thumbColor={Platform.OS === 'ios' ? undefined : '#ffffff'}
               ios_backgroundColor="#d3d3d3"
-              onValueChange={(value) => 
-                setSettings(prev => ({ ...prev, dark_mode: value }))
-              }
-              value={settings.dark_mode}
+              onValueChange={toggleDarkMode} 
+              value={isDarkMode} 
             />
           </View>
           
