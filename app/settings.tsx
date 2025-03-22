@@ -1,6 +1,10 @@
 import React, { useState } from 'react';
+<<<<<<< Updated upstream
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
+=======
+import { View, Text, StyleSheet, TouchableOpacity, Picker, ScrollView, Switch } from 'react-native';
+>>>>>>> Stashed changes
 import Ionicons from '@expo/vector-icons/Ionicons';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
@@ -8,6 +12,8 @@ export default function SettingsScreen() {
   const [notificationFrequency, setNotificationFrequency] = useState('daily');
   const [notificationType, setNotificationType] = useState('all');
   const [notificationTime, setNotificationTime] = useState('morning');
+  const [isAnonymous, setIsAnonymous] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(false);
 
   const handleHelpPress = () => {
     // Add help functionality here
@@ -83,6 +89,26 @@ export default function SettingsScreen() {
               <Picker.Item label="Evening (6:00-8:00pm)" value="evening" />
               <Picker.Item label="Night (8:00-11:00pm)" value="night" />
             </Picker>
+          </View>
+        </View>
+
+        <View style={styles.sectionContainer}>
+          <Text style={styles.sectionTitle}>Privacy</Text>
+          <View style={styles.switchContainer}>
+            <Text style={styles.switchLabel}>Anonymous</Text>
+            <Switch
+              value={isAnonymous}
+              onValueChange={(value) => setIsAnonymous(value)}
+              style={styles.switch}
+            />
+          </View>
+          <View style={styles.switchContainer}>
+            <Text style={styles.switchLabel}>Dark Mode</Text>
+            <Switch
+              value={isDarkMode}
+              onValueChange={(value) => setIsDarkMode(value)}
+              style={styles.switch}
+            />
           </View>
         </View>
 
@@ -167,5 +193,20 @@ const styles = StyleSheet.create({
     width: '100%',
     backgroundColor: '#fff',
     borderRadius: 10,
+  },
+  switchContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginVertical: 10,
+    width: '100%',
+  },
+  switchLabel: {
+    fontSize: 16,
+    color: '#4A90E2',
+    marginRight: 10,
+  },
+  switch: {
+    transform: [{ scaleX: 1.2 }, { scaleY: 1.2 }],
   },
 });
