@@ -352,7 +352,7 @@ export default function CommunityScreen() {
   return (
     <SafeAreaView style={themeStyles.container}>
       <View style={themeStyles.header}>
-        <Text style={themeStyles.title}>Tinnitus Community</Text>
+        <Text style={themeStyles.title} numberOfLines={1} ellipsizeMode="tail">Tinnitus Community</Text>
         
         <View style={themeStyles.headerButtons}>
           <TouchableOpacity 
@@ -540,7 +540,7 @@ export default function CommunityScreen() {
 const lightStyles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f8f9fa' },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#e1e4e8', backgroundColor: '#fff' },
-  title: { fontSize: 20, fontWeight: 'bold', color: Colors.primary },
+  title: { fontSize: 20, fontWeight: 'bold', color: Colors.primary, flexShrink: 1 },
   headerButtons: { flexDirection: 'row', alignItems: 'center' },
   sortButton: { flexDirection: 'row', alignItems: 'center', marginRight: 12, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 16, backgroundColor: '#f1f3f5' },
   sortButtonText: { fontSize: 12, color: '#666', marginLeft: 4 },
