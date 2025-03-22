@@ -352,7 +352,7 @@ export default function CommunityScreen() {
   return (
     <SafeAreaView style={themeStyles.container}>
       <View style={themeStyles.header}>
-        <Text style={themeStyles.title} numberOfLines={1} ellipsizeMode="tail">Community</Text>
+        <Text style={themeStyles.title} numberOfLines={1} ellipsizeMode="tail">Tinnitus Community</Text>
         
         <View style={themeStyles.headerButtons}>
           <TouchableOpacity 
@@ -540,7 +540,7 @@ export default function CommunityScreen() {
 const lightStyles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f8f9fa' },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#e1e4e8', backgroundColor: '#fff' },
-  title: { fontSize: 20, fontWeight: 'bold', color: Colors.primary, flexShrink: 1 },
+  title: { fontSize: 20, fontWeight: 'bold', color: '#fff', flexShrink: 1 },
   headerButtons: { flexDirection: 'row', alignItems: 'center' },
   sortButton: { flexDirection: 'row', alignItems: 'center', marginRight: 12, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 16, backgroundColor: '#f1f3f5' },
   sortButtonText: { fontSize: 12, color: '#666', marginLeft: 4 },
@@ -645,13 +645,13 @@ const darkStyles = StyleSheet.create({
   modalOverlay: { flex: 1, backgroundColor: '1E1E1E', justifyContent: 'flex-end' },
   modalContainer: { backgroundColor: '#1E1E1E', borderTopLeftRadius: 20, borderTopRightRadius: 20, maxHeight: '80%' },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16, borderBottomWidth: 1, borderBottomColor: '#e1e4e8' },
-  modalTitle: { fontSize: 18, fontWeight: 'bold', color: Colors.primary },
+  modalTitle: { fontSize: 18, fontWeight: 'bold', color: '#fff' },
   modalBody: { padding: 16 },
   modalCategoryContainer: { flexDirection: 'row', marginBottom: 16 },
-  inputLabel: { fontSize: 14, fontWeight: '500', marginBottom: 8, color: '#333' },
-  titleInput: { backgroundColor: '#f1f3f5', borderRadius: 8, padding: 12, marginBottom: 16, fontSize: 16 },
-  contentInput: { backgroundColor: '#f1f3f5', borderRadius: 8, padding: 12, fontSize: 16, minHeight: 120, marginBottom: 16 },
-  submitButton: { backgroundColor: '1E1E1E', borderRadius: 8, padding: 16, alignItems: 'center', marginTop: 8 },
-  disabledButton: { backgroundColor: '#1E1E1E' },
-  submitButtonText: { color: '#1E1E1E', fontWeight: 'bold', fontSize: 16 }
+  inputLabel: { fontSize: 14, fontWeight: '500', marginBottom: 8, color: '#fff' },
+  titleInput: { backgroundColor: '#484747', borderRadius: 8, padding: 12, marginBottom: 16, fontSize: 16, color: '#fff'},
+  contentInput: { backgroundColor: '#484747', borderRadius: 8, padding: 12, fontSize: 16, minHeight: 120, marginBottom: 16, color: '#fff'},
+  submitButton: { backgroundColor: '#484747', borderRadius: 8, padding: 16, alignItems: 'center', marginTop: 8, color: '#fff' },
+  disabledButton: { backgroundColor: '#151515', color: '#fff'},
+  submitButtonText: {color: '#fff', fontWeight: 'bold', fontSize: 16 }
 });
