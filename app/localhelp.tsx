@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Text, View, FlatList, StyleSheet, TextInput, Button, Keyboard, ScrollView } from 'react-native';
-import React, { useState } from 'react';
 import { Text, View, StyleSheet, TextInput, Button, Keyboard, ScrollView, SafeAreaView, TouchableOpacity, Linking } from 'react-native';
 import { Colors } from './theme.js';
 

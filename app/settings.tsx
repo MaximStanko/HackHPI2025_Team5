@@ -10,6 +10,7 @@ import {
   Alert,
   ActivityIndicator
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Slider from '@react-native-community/slider';
 import { getUserSettings, updateUserSettings } from '@/utils/supabase';
@@ -28,6 +29,8 @@ export default function SettingsScreen() {
   const [userId, setUserId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [isAnonymous, setIsAnonymous] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(false);
 
   useEffect(() => {
     const loadSettings = async () => {
@@ -99,32 +102,32 @@ export default function SettingsScreen() {
   
   if (loading) {
     return (
-      <SafeAreaView style={styles.loadingContainer}>
+      <SafeAreaView style={themeStyles.loadingContainer}>
         <ActivityIndicator size="large" color={Colors.primary} />
-        <Text style={styles.loadingText}>Loading your settings...</Text>
+        <Text style={themeStyles.loadingText}>Loading your settings...</Text>
       </SafeAreaView>
     );
   }
   
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Settings</Text>
+    <SafeAreaView style={themeStyles.container}>
+      <View style={themeStyles.header}>
+        <Text style={themeStyles.title}>Settings</Text>
       </View>
       
-      <ScrollView style={styles.settingsContainer}>
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Tinnitus Profile</Text>
+      <ScrollView style={themeStyles.settingsContainer}>
+        <View style={themeStyles.section}>
+          <Text style={themeStyles.sectionTitle}>Tinnitus Profile</Text>
           
-          <View style={styles.setting}>
-            <View style={styles.settingHeader}>
+          <View style={themeStyles.setting}>
+            <View style={themeStyles.settingHeader}>
               <FontAwesome5 name="volume-up" size={20} color={Colors.primary} />
-              <Text style={styles.settingTitle}>Current Tinnitus Level</Text>
+              <Text style={themeStyles.settingTitle}>Current Tinnitus Level</Text>
             </View>
             
-            <View style={styles.sliderContainer}>
+            <View style={themeStyles.sliderContainer}>
               <Slider
-                style={styles.slider}
+                style={themeStyles.slider}
                 minimumValue={0}
                 maximumValue={10}
                 step={1}
@@ -136,26 +139,26 @@ export default function SettingsScreen() {
                 maximumTrackTintColor="#d3d3d3"
                 thumbTintColor={Colors.primary}
               />
-              <View style={styles.sliderLabels}>
-                <Text style={styles.sliderValue}>
+              <View style={themeStyles.sliderLabels}>
+                <Text style={themeStyles.sliderValue}>
                   {settings.tinnitus_level} - {getTinnitusLevelLabel(settings.tinnitus_level)}
                 </Text>
-                <View style={styles.sliderMinMax}>
-                  <Text style={styles.sliderMinMaxText}>Mild</Text>
-                  <Text style={styles.sliderMinMaxText}>Extreme</Text>
+                <View style={themeStyles.sliderMinMax}>
+                  <Text style={themeStyles.sliderMinMaxText}>Mild</Text>
+                  <Text style={themeStyles.sliderMinMaxText}>Extreme</Text>
                 </View>
               </View>
             </View>
           </View>
         </View>
         
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>App Settings</Text>
+        <View style={themeStyles.section}>
+          <Text style={themeStyles.sectionTitle}>App Settings</Text>
           
-          <View style={styles.setting}>
-            <View style={styles.settingHeader}>
+          <View style={themeStyles.setting}>
+            <View style={themeStyles.settingHeader}>
               <FontAwesome name="moon-o" size={20} color={Colors.primary} />
-              <Text style={styles.settingTitle}>Dark Mode</Text>
+              <Text style={themeStyles.settingTitle}>Dark Mode</Text>
             </View>
             <Switch
               trackColor={{ false: '#d3d3d3', true: Colors.primary }}
@@ -168,10 +171,10 @@ export default function SettingsScreen() {
             />
           </View>
           
-          <View style={styles.setting}>
-            <View style={styles.settingHeader}>
+          <View style={themeStyles.setting}>
+            <View style={themeStyles.settingHeader}>
               <FontAwesome name="bell" size={20} color={Colors.primary} />
-              <Text style={styles.settingTitle}>Push Notifications</Text>
+              <Text style={themeStyles.settingTitle}>Push Notifications</Text>
             </View>
             <Switch
               trackColor={{ false: '#d3d3d3', true: Colors.primary }}
@@ -185,37 +188,37 @@ export default function SettingsScreen() {
           </View>
         </View>
         
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Account</Text>
+        <View style={themeStyles.section}>
+          <Text style={themeStyles.sectionTitle}>Account</Text>
           
-          <TouchableOpacity style={styles.setting}>
-            <View style={styles.settingHeader}>
+          <TouchableOpacity style={themeStyles.setting}>
+            <View style={themeStyles.settingHeader}>
               <FontAwesome name="user" size={20} color={Colors.primary} />
-              <Text style={styles.settingTitle}>Profile Information</Text>
+              <Text style={themeStyles.settingTitle}>Profile Information</Text>
             </View>
             <FontAwesome name="chevron-right" size={16} color="#888" />
           </TouchableOpacity>
           
-          <TouchableOpacity style={styles.setting}>
-            <View style={styles.settingHeader}>
+          <TouchableOpacity style={themeStyles.setting}>
+            <View style={themeStyles.settingHeader}>
               <FontAwesome name="lock" size={20} color={Colors.primary} />
-              <Text style={styles.settingTitle}>Change Password</Text>
+              <Text style={themeStyles.settingTitle}>Change Password</Text>
             </View>
             <FontAwesome name="chevron-right" size={16} color="#888" />
           </TouchableOpacity>
         </View>
       </ScrollView>
       
-      <View style={styles.footer}>
+      <View style={themeStyles.footer}>
         <TouchableOpacity 
-          style={styles.saveButton}
+          style={themeStyles.saveButton}
           onPress={handleSaveSettings}
           disabled={saving}
         >
           {saving ? (
             <ActivityIndicator size="small" color="#fff" />
           ) : (
-            <Text style={styles.saveButtonText}>Save Settings</Text>
+            <Text style={themeStyles.saveButtonText}>Save Settings</Text>
           )}
         </TouchableOpacity>
       </View>
@@ -223,7 +226,114 @@ export default function SettingsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const lightStyles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#f8f9fa',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: '#666',
+  },
+  header: {
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e1e4e8',
+    backgroundColor: '#fff',
+  },
+  title: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: Colors.primary,
+  },
+  settingsContainer: {
+    flex: 1,
+  },
+  section: {
+    marginBottom: 24,
+    backgroundColor: '#fff',
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: '#e1e4e8',
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: '#f8f9fa',
+    color: '#666',
+  },
+  setting: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f1f1f1',
+  },
+  settingHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  settingTitle: {
+    fontSize: 16,
+    marginLeft: 12,
+    color: '#333',
+  },
+  sliderContainer: {
+    flex: 1,
+    marginTop: 8,
+    paddingHorizontal: 24,
+  },
+  slider: {
+    width: '100%',
+    height: 40,
+  },
+  sliderLabels: {
+    marginTop: 8,
+  },
+  sliderValue: {
+    fontSize: 16,
+    fontWeight: '500',
+    textAlign: 'center',
+    color: Colors.primary,
+  },
+  sliderMinMax: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 4,
+  },
+  sliderMinMaxText: {
+    fontSize: 12,
+    color: '#888',
+  },
+  footer: {
+    padding: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#e1e4e8',
+    backgroundColor: '#fff',
+  },
+  saveButton: {
+    backgroundColor: Colors.primary,
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  saveButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+});
+
+const darkStyles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f8f9fa',
