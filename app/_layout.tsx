@@ -22,6 +22,8 @@ import Account from '../components/Account'
 import { Session } from '@supabase/supabase-js'
 import { storage } from '@/utils/storage';
 
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 
 type UserSession = {
