@@ -247,9 +247,9 @@ export default function TabLayout() {
       />
         
       <Tabs.Screen
-        name="betterhelp"
+        name="localhelp"
         options={{
-          title: 'Betterhelp',
+          title: 'LocalHelp',
           tabBarIcon: ({ color }) => <FontAwesome5 name="bed" size={24} color={color} />,
         }}
       />
