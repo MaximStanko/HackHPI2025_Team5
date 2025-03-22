@@ -523,6 +523,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderBottomWidth: 1,
     borderBottomColor: '#e1e4e8',
+    maxHeight: 60,
+    minHeight: 60,
   },
   categoryScrollContainer: {
     paddingLeft: 4,

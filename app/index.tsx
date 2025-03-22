@@ -5,13 +5,14 @@ import { Picker } from '@react-native-picker/picker';
 export default function QuestionnaireScreen() {
   const questions = [
     { key: 'age', text: 'Enter your Age:', type: 'input', keyboardType: 'numeric' },
-    { key: 'gender', text: 'Gender:', type: 'picker', options: ['Male', 'Female', 'Other'] },
+    { key: 'gender', text: 'Gender:', type: 'picker', options: ['Male', 'Female', 'Kirby', 'Other'] },
     { key: 'duration', text: 'Duration: How long have you had tinnitus?', type: 'input' },
     { key: 'loudness', text: 'Loudness: How loud is your tinnitus?', type: 'picker', options: ['Soft', 'Moderate', 'Loud'] },
     { key: 'perception', text: 'Where do you perceive your tinnitus?', type: 'picker', options: ['left ear', 'right ear', 'both ears, worse in left', 'both ears, worse in right', 'both ears', 'inside the head'] },
     { key: 'pitch', text: 'Please describe the pitch of your tinnitus?', type: 'picker', options: ['very high frequency', 'high frequency', 'medium frequency', 'low frequency'] },
     { key: 'psychological treatment', text: 'Are you currently under treatment for psychiatric problems?', type: 'picker', options: ['Yes', 'No'] },
     { key: 'dizziness', text: 'Do you suffer from dizziness or vertigo?', type: 'picker', options: ['Yes', 'No'] },
+    { key: 'submitted', text: 'Thank you for filling out the questionnaire.', type: 'submitted'},
   ];
 
   const [responses, setResponses] = useState({});
@@ -24,8 +25,15 @@ export default function QuestionnaireScreen() {
   const handleNext = () => {
     if (currentQuestionIndex < questions.length - 1) {
       setCurrentQuestionIndex(currentQuestionIndex + 1);
-    } else {
+    }
+    if (currentQuestionIndex == questions.length - 2) {
       console.log(responses);
+    }
+  };
+
+  const handlePrev = () => {
+    if (currentQuestionIndex > 0) {
+      setCurrentQuestionIndex(currentQuestionIndex - 1);
     }
   };
 
@@ -36,39 +44,54 @@ export default function QuestionnaireScreen() {
       <Text style={styles.title}>Questionnaire</Text>
       <Text style={styles.label}>{currentQuestion.text}</Text>
       
-      {currentQuestion.type === 'input' ? (
-        <TextInput 
-          style={styles.input} 
-          keyboardType={currentQuestion.keyboardType || 'default'}
-          value={responses[currentQuestion.key] || ''} 
-          onChangeText={(text) => handleChange(currentQuestion.key, text)}
-        />
-      ) : (
-        <Picker
-          selectedValue={responses[currentQuestion.key] || ''}
-          style={styles.picker}
-          onValueChange={(itemValue) => handleChange(currentQuestion.key, itemValue)}
-        >
-          <Picker.Item label="Select an option" value="" />
-          {currentQuestion.options.map((option) => (
-            <Picker.Item key={option} label={option} value={option} />
-          ))}
-        </Picker>
-      )}
+      <View style={styles.inputContainer}>
+        {currentQuestion.type === 'input' ? (
+          <TextInput 
+            style={styles.input} 
+            keyboardType={currentQuestion.keyboardType || 'default'}
+            value={responses[currentQuestion.key] || ''} 
+            onChangeText={(text) => handleChange(currentQuestion.key, text)}
+          />
+        ) : currentQuestion.type === 'picker' ? (
+          <Picker
+            selectedValue={responses[currentQuestion.key] || ''}
+            style={styles.picker}
+            onValueChange={(itemValue) => handleChange(currentQuestion.key, itemValue)}
+          >
+            <Picker.Item label="Select an option" value="" />
+            {currentQuestion.options.map((option) => (
+              <Picker.Item key={option} label={option} value={option} />
+            ))}
+          </Picker>
+        ) : (<></>)}
+      </View>
 
-      <TouchableOpacity style={styles.button} onPress={handleNext}>
-        <Text style={styles.buttonText}>{currentQuestionIndex < questions.length - 1 ? 'Next' : 'Submit'}</Text>
-      </TouchableOpacity>
+      <View style={styles.buttonContainer}>
+        <TouchableOpacity style={currentQuestionIndex == 0 ? styles.buttonDisabled : styles.button} onPress={handlePrev} disabled={currentQuestionIndex == 0}>
+          <Text style={styles.buttonText}>{'Previous'}</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity style={currentQuestion.key === 'submitted' ? styles.buttonDisabled : styles.button} onPress={handleNext} disabled={currentQuestion.key === 'submitted'}>
+          <Text style={styles.buttonText}>{'Next'}</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
+    margin: 'auto',
+    justifyContent: 'center',
+    padding: 20,
+    backgroundColor: '#fff',
+    borderRadius: 10,
+  },
+  inputContainer: {
     flex: 1,
     justifyContent: 'center',
     padding: 20,
-    backgroundColor: '#F7F9FC',
+    maxHeight: 100,
   },
   title: {
     fontSize: 22,
@@ -78,7 +101,7 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 16,
-    marginBottom: 10,
+    marginBottom: 20,
   },
   input: {
     borderWidth: 1,
@@ -96,7 +119,21 @@ const styles = StyleSheet.create({
   },
   button: {
     backgroundColor: '#4A90E2',
-    padding: 15,
+    paddingTop: 6,
+    paddingBottom: 6,
+    paddingRight: 10,
+    paddingLeft: 10,
+    margin: 10,
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  buttonDisabled: {
+    backgroundColor: '#ccc',
+    paddingTop: 6,
+    paddingBottom: 6,
+    paddingRight: 10,
+    paddingLeft: 10,
+    margin: 10,
     borderRadius: 10,
     alignItems: 'center',
   },
@@ -104,5 +141,12 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 18,
     fontWeight: '500',
+  },
+  buttonContainer: {
+    flexDirection: 'row',
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+    marginLeft: 'auto',
+    marginRight: 'auto',
   },
 });
