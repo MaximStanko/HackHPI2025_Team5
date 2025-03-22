@@ -29,4 +29,5 @@ export const commonStyles = StyleSheet.create({
         fontSize: 18,
         fontWeight: '500',
     },
+    
 });

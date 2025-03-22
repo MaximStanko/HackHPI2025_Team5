@@ -1,489 +1,748 @@
-import React, { useState, useEffect } from "react";
-import {
-  Text,
-  View,
+import React, { useState, useEffect } from 'react';
+import { 
+  View, 
+  Text, 
+  StyleSheet, 
+  FlatList, 
+  TextInput, 
+  TouchableOpacity, 
+  ActivityIndicator,
+  Image,
   ScrollView,
-  TouchableOpacity,
-  StyleSheet,
-  TextInput,
   Modal,
   KeyboardAvoidingView,
-  Platform,
-  Alert,
-} from "react-native";
-import Post from "../components/post";
-import { AntDesign } from "@expo/vector-icons"; // Make sure you have expo/vector-icons installed
+  Platform
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { getAllPosts, createPost, populateExamplePosts, votePost, getUserVote } from '@/utils/supabase';
+import { commonStyles } from './styles.js';
+import { Colors } from './theme.js';
+import FontAwesome from '@expo/vector-icons/FontAwesome';
+import { Picker } from '@react-native-picker/picker';
 
-// Update the type for post items with an optional verified property
-type PostItem = {
+type Post = {
   id: number;
-  headline: string;
+  title: string;
   content: string;
-  username: string;
-  initialScore: number;
-  tags: string[];
-  date: string; // ISO date string
-  verified?: boolean; // Optional verified flag
+  category: string;
+  upvotes: number;
+  downvotes: number;
+  image_url: string | null;
+  created_at: string;
+  users: {
+    id: number;
+    email: string;
+  };
 };
 
-// Sample data for posts (here, "johndoe" is verified)
-const POSTS: PostItem[] = [
-  {
-    id: 1,
-    headline: "Welcome to our community!",
-    content:
-      "This is an example post to demonstrate the Post component. It includes upvote and downvote functionality.",
-    username: "johndoe",
-    initialScore: 5,
-    tags: ["welcome", "introduction", "community"],
-    date: "2023-01-01T12:00:00Z",
-    verified: true, // Mark this user as verified
-  },
-  {
-    id: 2,
-    headline: "Check out this cool feature",
-    content:
-      "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
-    username: "jane_smith",
-    initialScore: 12,
-    tags: ["feature", "update", "technology"],
-    date: "2023-01-02T12:00:00Z",
-  },
-  {
-    id: 3,
-    headline: "Tech meetup next week",
-    content:
-      "Join us for our monthly tech meetup where we'll discuss the latest trends in web development.",
-    username: "tech_guru",
-    initialScore: 8,
-    tags: ["event", "technology", "meetup"],
-    date: "2023-01-03T12:00:00Z",
-  },
-];
+export default function CommunityScreen() {
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [filteredPosts, setFilteredPosts] = useState<Post[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<string>('All');
+  const [loading, setLoading] = useState(true);
+  const [userId, setUserId] = useState<number | null>(null);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [newPostTitle, setNewPostTitle] = useState('');
+  const [newPostContent, setNewPostContent] = useState('');
+  const [newPostCategory, setNewPostCategory] = useState('General');
+  const [submitting, setSubmitting] = useState(false);
+  const [userVotes, setUserVotes] = useState<Record<number, 'up' | 'down' | null>>({});
+  const [sortBy, setSortBy] = useState('newest');
+  const [showSortPicker, setShowSortPicker] = useState(false);
 
-// Extract all unique tags
-const ALL_TAGS = Array.from(new Set(POSTS.flatMap((post) => post.tags)));
+  const categories = ['All', 'General', 'Tips', 'Questions', 'Experiences', 'Research'];
+  const sortOptions = [
+    { label: 'Newest', value: 'newest' },
+    { label: 'Most Upvoted', value: 'most_votes' },
+    { label: 'Oldest', value: 'oldest' },
+    { label: 'Controversial', value: 'controversial' },
+  ];
 
-// Toggle tag function
-const toggleTag = (
-  tag: string,
-  selectedTags: string[],
-  setSelectedTags: React.Dispatch<React.SetStateAction<string[]>>
-) => {
-  if (selectedTags.includes(tag)) {
-    // Remove tag if already selected
-    setSelectedTags(selectedTags.filter((t) => t !== tag));
-  } else {
-    // Add tag if not selected
-    setSelectedTags([...selectedTags, tag]);
-  }
-};
-
-// Clear all tags function
-const clearAllTags = (
-  setSelectedTags: React.Dispatch<React.SetStateAction<string[]>>
-) => {
-  setSelectedTags([]);
-};
-
-export default function Index() {
-  const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const [searchText, setSearchText] = useState("");
-  const [filteredPosts, setFilteredPosts] = useState<PostItem[]>(POSTS);
-
-  // New state for post creation
-  const [isCreateModalVisible, setCreateModalVisible] = useState(false);
-  const [newPostHeadline, setNewPostHeadline] = useState("");
-  const [newPostContent, setNewPostContent] = useState("");
-  const [newPostTags, setNewPostTags] = useState("");
-  const [allPosts, setAllPosts] = useState<PostItem[]>(POSTS);
-  const [allTags, setAllTags] = useState<string[]>(
-    Array.from(new Set(POSTS.flatMap((post) => post.tags)))
-  );
-
-  const handleToggleTag = (tag: string) => {
-    toggleTag(tag, selectedTags, setSelectedTags);
-  };
-
-  const handleClearAllTags = () => {
-    clearAllTags(setSelectedTags);
-  };
-
-  // Rest of your component remains the same
-  const openCreatePostModal = () => {
-    setCreateModalVisible(true);
-  };
-
-  const closeCreatePostModal = () => {
-    setCreateModalVisible(false);
-    // Reset form fields
-    setNewPostHeadline("");
-    setNewPostContent("");
-    setNewPostTags("");
-  };
-
-  const handleCreatePost = () => {
-    // Validate inputs
-    if (!newPostHeadline.trim()) {
-      Alert.alert("Error", "Please enter a headline for your post");
-      return;
-    }
-    if (!newPostContent.trim()) {
-      Alert.alert("Error", "Please enter content for your post");
-      return;
-    }
-
-    // Process tags
-    const tagList = newPostTags
-      .split(",")
-      .map((tag) => tag.trim().toLowerCase())
-      .filter((tag) => tag.length > 0);
-
-    // Create new post object with the current date
-    const newPost: PostItem = {
-      id: allPosts.length + 1, // Simple ID generation
-      headline: newPostHeadline.trim(),
-      content: newPostContent.trim(),
-      username: "admin", // Would come from authentication in a real app
-      initialScore: 0,
-      tags: tagList,
-      date: new Date().toISOString(), // Add the current date as ISO string
+  useEffect(() => {
+    // Get session user ID from local storage
+    const getUserData = async () => {
+      try {
+        const sessionStr = await localStorage.getItem('session');
+        if (sessionStr) {
+          const session = JSON.parse(sessionStr);
+          setUserId(session?.user?.id);
+        }
+      } catch (e) {
+        console.error('Failed to get user ID:', e);
+      }
     };
 
-    // Add to posts list
-    const updatedPosts = [newPost, ...allPosts];
-    setAllPosts(updatedPosts);
+    const loadPosts = async () => {
+      setLoading(true);
+      try {
+        // Populate example posts if none exist
+        await populateExamplePosts();
+        
+        // Get all posts with current sorting
+        const allPosts = await getAllPosts(sortBy);
+        setPosts(allPosts);
+        setFilteredPosts(allPosts);
+      } catch (error) {
+        console.error('Error loading posts:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-    // Update the available tags
-    const uniqueTags = Array.from(
-      new Set(updatedPosts.flatMap((post) => post.tags))
-    );
-    setAllTags(uniqueTags);
-    setSelectedTags([]); // Clear selected tags if needed
-    setFilteredPosts(updatedPosts); // Update filtered posts
+    getUserData();
+    loadPosts();
+  }, [sortBy]); // Add sortBy as dependency to reload when sorting changes
 
-    // Close modal
-    closeCreatePostModal();
+  // Check user votes on posts
+  useEffect(() => {
+    const checkUserVotes = async () => {
+      if (!userId) return;
+      
+      const votesMap: Record<number, 'up' | 'down' | null> = {};
+      for (const post of posts) {
+        const voteType = await getUserVote(userId, post.id);
+        votesMap[post.id] = voteType as 'up' | 'down' | null;
+      }
+      
+      setUserVotes(votesMap);
+    };
+
+    if (posts.length > 0 && userId) {
+      checkUserVotes();
+    }
+  }, [posts, userId]);
+
+  useEffect(() => {
+    if (selectedCategory === 'All') {
+      setFilteredPosts(posts);
+    } else {
+      setFilteredPosts(posts.filter(post => post.category === selectedCategory));
+    }
+  }, [selectedCategory, posts]);
+
+  const handleCreatePost = async () => {
+    if (!newPostTitle.trim() || !newPostContent.trim() || !userId) return;
+    
+    setSubmitting(true);
+    try {
+      await createPost(userId, {
+        title: newPostTitle.trim(),
+        content: newPostContent.trim(),
+        category: newPostCategory
+      });
+      
+      setNewPostTitle('');
+      setNewPostContent('');
+      setNewPostCategory('General');
+      setModalVisible(false);
+      
+      // Refresh posts
+      const allPosts = await getAllPosts(sortBy);
+      setPosts(allPosts);
+    } catch (error) {
+      console.error('Error creating post:', error);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
-  // Update the useEffect to use allPosts instead of POSTS
-  useEffect(() => {
-    let result = allPosts;
-
-    if (selectedTags.length > 0) {
-      result = result.filter((post) =>
-        selectedTags.every((selectedTag) => post.tags.includes(selectedTag))
-      );
+  const handleVote = async (postId: number, voteType: 'up' | 'down') => {
+    if (!userId) return;
+    
+    try {
+      const { voted, voteType: newVoteType, upvotes, downvotes } = await votePost(userId, postId, voteType);
+      
+      // Update local state with new vote
+      setUserVotes(prev => ({
+        ...prev,
+        [postId]: newVoteType
+      }));
+      
+      // Update post vote count with values from the server
+      setPosts(posts.map(post => {
+        if (post.id !== postId) return post;
+        
+        // Use the upvotes and downvotes returned from the server
+        return { ...post, upvotes, downvotes };
+      }));
+    } catch (error) {
+      console.error('Error voting on post:', error);
     }
+  };
 
-    if (searchText) {
-      const lowerCaseSearch = searchText.toLowerCase();
-      result = result.filter(
-        (post) =>
-          post.headline.toLowerCase().includes(lowerCaseSearch) ||
-          post.content.toLowerCase().includes(lowerCaseSearch) ||
-          post.tags.some((tag) => tag.toLowerCase().includes(lowerCaseSearch))
-      );
-    }
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString();
+  };
 
-    setFilteredPosts(result);
-  }, [selectedTags, searchText, allPosts]);
+  const renderPost = ({ item }: { item: Post }) => {
+    const isCurrentUser = userId === item.users?.id;
+    const authorName = isCurrentUser 
+      ? 'You' 
+      : (item.users?.email?.split('@')[0] || 'Anonymous');
+    const userVote = userVotes[item.id];
+    const voteScore = (item.upvotes || 0) - (item.downvotes || 0);
+    
+    return (
+      <View style={styles.postCard}>
+        {item.image_url && (
+          <Image source={{ uri: item.image_url }} style={styles.postImage} />
+        )}
+        
+        <View style={styles.postContent}>
+          <Text style={styles.postCategory}>{item.category || 'General'}</Text>
+          <Text style={styles.postTitle}>{item.title}</Text>
+          <Text style={styles.postSummary} numberOfLines={3}>{item.content}</Text>
+          
+          <View style={styles.postFooter}>
+            <View style={styles.postAuthorSection}>
+              <Text style={styles.postAuthor}>{authorName}</Text>
+              <Text style={styles.postDate}>{formatDate(item.created_at)}</Text>
+            </View>
+            
+            <View style={styles.voteContainer}>
+              <TouchableOpacity 
+                style={[
+                  styles.voteButton,
+                  userVote === 'up' && styles.upvotedButton
+                ]} 
+                onPress={() => {
+                  // Add visual feedback before server response
+                  const isAlreadyUpvoted = userVote === 'up';
+                  if (!isAlreadyUpvoted) {
+                    setUserVotes(prev => ({
+                      ...prev,
+                      [item.id]: 'up'
+                    }));
+                  }
+                  handleVote(item.id, 'up');
+                }}
+              >
+                <FontAwesome 
+                  name="arrow-up" 
+                  size={14} 
+                  color={userVote === 'up' ? "#fff" : "#666"} 
+                />
+              </TouchableOpacity>
+              
+              <Text style={styles.voteScore}>
+                {voteScore}
+              </Text>
+              
+              <TouchableOpacity 
+                style={[
+                  styles.voteButton,
+                  userVote === 'down' && styles.downvotedButton
+                ]} 
+                onPress={() => {
+                  // Add visual feedback before server response
+                  const isAlreadyDownvoted = userVote === 'down';
+                  if (!isAlreadyDownvoted) {
+                    setUserVotes(prev => ({
+                      ...prev,
+                      [item.id]: 'down'
+                    }));
+                  }
+                  handleVote(item.id, 'down');
+                }}
+              >
+                <FontAwesome 
+                  name="arrow-down" 
+                  size={14} 
+                  color={userVote === 'down' ? "#fff" : "#666"} 
+                />
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </View>
+    );
+  };
 
   return (
-    <View
-      style={{ flex: 1, justifyContent: "flex-start", backgroundColor: "#fff" }}
-    >
-      <View style={styles.searchContainer}>
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Search posts..."
-          value={searchText}
-          onChangeText={setSearchText}
-        />
-      </View>
-
-      <View style={styles.tagControlsContainer}>
-        <Text style={styles.tagFilterTitle}>Filter by tags:</Text>
-        {selectedTags.length > 0 && (
-          <TouchableOpacity onPress={handleClearAllTags}>
-            <Text style={styles.clearTagsButton}>Clear all</Text>
-          </TouchableOpacity>
-        )}
-      </View>
-
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={styles.tagFilterContainer}
-      >
-        {allTags.map((tag, index) => (
-          <TouchableOpacity
-            key={index}
-            style={[
-              styles.tagFilter,
-              selectedTags.includes(tag) && styles.selectedTagFilter,
-            ]}
-            onPress={() => handleToggleTag(tag)} // Use handleToggleTag here
+    <SafeAreaView style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.title}>Tinnitus Community</Text>
+        
+        <View style={styles.headerButtons}>
+          <TouchableOpacity 
+            style={styles.sortButton}
+            onPress={() => setShowSortPicker(!showSortPicker)}
           >
-            <Text
+            <FontAwesome name="sort" size={16} color="#666" />
+            <Text style={styles.sortButtonText}>
+              {sortOptions.find(opt => opt.value === sortBy)?.label}
+            </Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={styles.newPostButton}
+            onPress={() => setModalVisible(true)}
+          >
+            <Text style={styles.newPostButtonText}>+ New Post</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+      
+      {showSortPicker && (
+        <View style={styles.sortPickerContainer}>
+          {sortOptions.map(option => (
+            <TouchableOpacity
+              key={option.value}
               style={[
-                styles.tagFilterText,
-                selectedTags.includes(tag) && styles.selectedTagFilterText,
+                styles.sortOption,
+                sortBy === option.value && styles.selectedSortOption
+              ]}
+              onPress={() => {
+                setSortBy(option.value);
+                setShowSortPicker(false);
+              }}
+            >
+              <Text style={[
+                styles.sortOptionText,
+                sortBy === option.value && styles.selectedSortOptionText
+              ]}>
+                {option.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
+      
+      <ScrollView 
+        horizontal 
+        showsHorizontalScrollIndicator={false} 
+        contentContainerStyle={styles.categoryScrollContainer}
+        style={styles.categoryContainer}
+      >
+        {categories.map(category => (
+          <TouchableOpacity
+            key={category}
+            style={[
+              styles.categoryButton,
+              selectedCategory === category && styles.selectedCategoryButton
+            ]}
+            onPress={() => setSelectedCategory(category)}
+          >
+            <Text 
+              style={[
+                styles.categoryText,
+                selectedCategory === category && styles.selectedCategoryText
               ]}
             >
-              #{tag}
+              {category}
             </Text>
           </TouchableOpacity>
         ))}
       </ScrollView>
-
-      <ScrollView
-        contentContainerStyle={{
-          paddingBottom: 16,
-          justifyContent: "flex-start",
-        }}
-      >
-        {filteredPosts.length > 0 ? (
-          filteredPosts.map((post) => (
-            <Post
-              key={post.id}
-              headline={post.headline}
-              content={post.content}
-              username={post.username}
-              initialScore={post.initialScore}
-              tags={post.tags}
-              date={post.date}
-              verified={post.verified} // Pass verified flag
-            />
-          ))
-        ) : (
-          <View style={styles.noResultsContainer}>
-            <Text style={styles.noResultsText}>
-              No posts found. Try a different search or tag combination.
-            </Text>
-          </View>
-        )}
-      </ScrollView>
-
-      {/* Create Post Floating Action Button */}
-      <TouchableOpacity
-        style={styles.createPostButton}
-        onPress={openCreatePostModal}
-      >
-        <AntDesign name="plus" size={24} color="white" />
-      </TouchableOpacity>
-
-      {/* Create Post Modal */}
-      <Modal
-        visible={isCreateModalVisible}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={closeCreatePostModal}
-      >
-        <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-          style={styles.modalContainer}
-        >
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Create New Post</Text>
-              <TouchableOpacity onPress={closeCreatePostModal}>
-                <AntDesign name="close" size={24} color="#555" />
+      
+      {loading ? (
+        <ActivityIndicator size="large" color={Colors.primary} style={styles.loader} />
+      ) : (
+        <FlatList
+          data={filteredPosts}
+          renderItem={renderPost}
+          keyExtractor={(item) => item.id.toString()}
+          contentContainerStyle={styles.listContainer}
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyText}>No posts in this category yet.</Text>
+              <TouchableOpacity 
+                style={styles.emptyButton}
+                onPress={() => setModalVisible(true)}
+              >
+                <Text style={styles.emptyButtonText}>Create the first post</Text>
               </TouchableOpacity>
             </View>
-
-            <ScrollView style={styles.formContainer}>
-              <Text style={styles.inputLabel}>Headline</Text>
+          }
+        />
+      )}
+      
+      {/* New Post Modal */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={modalVisible}
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            style={styles.modalContainer}
+          >
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Create New Post</Text>
+              <TouchableOpacity onPress={() => setModalVisible(false)}>
+                <FontAwesome name="times" size={24} color="#333" />
+              </TouchableOpacity>
+            </View>
+            
+            <View style={styles.modalBody}>
+              <Text style={styles.inputLabel}>Category</Text>
+              <ScrollView 
+                horizontal 
+                showsHorizontalScrollIndicator={false} 
+                contentContainerStyle={styles.categoryScrollContainer}
+                style={styles.modalCategoryContainer}
+              >
+                {categories.slice(1).map(category => (
+                  <TouchableOpacity
+                    key={category}
+                    style={[
+                      styles.categoryButton,
+                      newPostCategory === category && styles.selectedCategoryButton
+                    ]}
+                    onPress={() => setNewPostCategory(category)}
+                  >
+                    <Text 
+                      style={[
+                        styles.categoryText,
+                        newPostCategory === category && styles.selectedCategoryText
+                      ]}
+                    >
+                      {category}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+              
+              <Text style={styles.inputLabel}>Title</Text>
               <TextInput
-                style={styles.textInput}
-                placeholder="Enter a headline for your post..."
-                value={newPostHeadline}
-                onChangeText={setNewPostHeadline}
+                style={styles.titleInput}
+                placeholder="Enter a descriptive title..."
+                value={newPostTitle}
+                onChangeText={setNewPostTitle}
                 maxLength={100}
               />
-
+              
               <Text style={styles.inputLabel}>Content</Text>
               <TextInput
-                style={[styles.textInput, styles.contentInput]}
-                placeholder="Write your post content here..."
+                style={styles.contentInput}
+                placeholder="Share your thoughts, experience or question..."
                 value={newPostContent}
                 onChangeText={setNewPostContent}
-                multiline={true}
-                numberOfLines={8}
+                multiline
                 textAlignVertical="top"
               />
-
-              <Text style={styles.inputLabel}>Tags (comma-separated)</Text>
-              <TextInput
-                style={styles.textInput}
-                placeholder="tag1, tag2, tag3..."
-                value={newPostTags}
-                onChangeText={setNewPostTags}
-              />
-
-              <Text style={styles.tagHint}>
-                Add relevant tags to help others find your post
-              </Text>
-
-              <TouchableOpacity
-                style={styles.submitButton}
+              
+              <TouchableOpacity 
+                style={[
+                  styles.submitButton, 
+                  (!newPostTitle.trim() || !newPostContent.trim()) && styles.disabledButton
+                ]}
                 onPress={handleCreatePost}
+                disabled={!newPostTitle.trim() || !newPostContent.trim() || submitting}
               >
-                <Text style={styles.submitButtonText}>Post</Text>
+                {submitting ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Text style={styles.submitButtonText}>Post</Text>
+                )}
               </TouchableOpacity>
-            </ScrollView>
-          </View>
-        </KeyboardAvoidingView>
+            </View>
+          </KeyboardAvoidingView>
+        </View>
       </Modal>
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  searchContainer: {
-    padding: 16,
-    paddingBottom: 8,
+  container: {
+    flex: 1,
+    backgroundColor: '#f8f9fa',
   },
-  searchInput: {
-    backgroundColor: "#f0f0f0",
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e1e4e8',
+    backgroundColor: '#fff',
+  },
+  title: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: Colors.primary,
+  },
+  headerButtons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  sortButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 16,
+    backgroundColor: '#f1f3f5',
+  },
+  sortButtonText: {
+    fontSize: 12,
+    color: '#666',
+    marginLeft: 4,
+  },
+  newPostButton: {
+    backgroundColor: Colors.primary,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
     borderRadius: 20,
+  },
+  newPostButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+  },
+  sortPickerContainer: {
+    backgroundColor: 'white',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e1e4e8',
+    paddingVertical: 8,
+  },
+  sortOption: {
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+  },
+  selectedSortOption: {
+    backgroundColor: '#f1f3f5',
+  },
+  sortOptionText: {
+    fontSize: 14,
+    color: '#333',
+  },
+  selectedSortOptionText: {
+    fontWeight: 'bold',
+    color: Colors.primary,
+  },
+  categoryContainer: {
+    flexDirection: 'row',
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e1e4e8',
+  },
+  categoryScrollContainer: {
+    paddingLeft: 4,
+    paddingRight: 4,
+  },
+  categoryButton: {
     paddingHorizontal: 16,
     paddingVertical: 8,
-    fontSize: 16,
-  },
-  tagControlsContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingTop: 8,
-  },
-  tagFilterTitle: {
-    fontSize: 14,
-    fontWeight: "500",
-    color: "#666",
-  },
-  clearTagsButton: {
-    fontSize: 14,
-    color: "#007AFF",
-    fontWeight: "500",
-  },
-  tagFilterContainer: {
-    paddingHorizontal: 16,
-    paddingTop: 8,
-    paddingBottom: 16,
-  },
-  tagFilter: {
-    backgroundColor: "#f0f0f0",
+    marginHorizontal: 4,
     borderRadius: 20,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    marginRight: 8,
-    width: 100,
-    height: 36,
-    justifyContent: "center",
-    alignItems: "center",
-    overflow: "hidden",
+    backgroundColor: '#f1f3f5',
+    minWidth: 80,
+    alignItems: 'center',
   },
-  selectedTagFilter: {
-    backgroundColor: "#007AFF",
+  selectedCategoryButton: {
+    backgroundColor: Colors.primary,
   },
-  tagFilterText: {
-    color: "#555",
-    fontSize: 14,
-    fontWeight: "500",
-    textAlign: "center",
+  categoryText: {
+    color: '#333',
+    fontWeight: '500',
   },
-  selectedTagFilterText: {
-    color: "white",
+  selectedCategoryText: {
+    color: '#fff',
   },
-  noResultsContainer: {
-    padding: 20,
-    alignItems: "center",
+  loader: {
+    marginTop: 20,
   },
-  noResultsText: {
-    fontSize: 16,
-    color: "#555",
-    textAlign: "center",
+  listContainer: {
+    padding: 12,
   },
-  createPostButton: {
-    position: "absolute",
-    right: 20,
-    bottom: 20,
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: "#007AFF",
-    alignItems: "center",
-    justifyContent: "center",
-    elevation: 5,
-    shadowColor: "#000",
+  postCard: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    marginBottom: 16,
+    overflow: 'hidden',
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  postImage: {
+    width: '100%',
+    height: 150,
+    resizeMode: 'cover',
+  },
+  postContent: {
+    padding: 16,
+  },
+  postCategory: {
+    color: Colors.primary,
+    fontWeight: '500',
+    fontSize: 12,
+    marginBottom: 4,
+  },
+  postTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 8,
+    color: '#333',
+  },
+  postSummary: {
+    fontSize: 14,
+    color: '#666',
+    lineHeight: 20,
+    marginBottom: 16,
+  },
+  postFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderTopWidth: 1,
+    borderTopColor: '#f1f3f5',
+    paddingTop: 12,
+  },
+  postAuthorSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  postAuthor: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#333',
+    marginRight: 8,
+  },
+  postDate: {
+    fontSize: 12,
+    color: '#999',
+  },
+  voteContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f8f9fa',
+    borderRadius: 16,
+    paddingHorizontal: 4,
+  },
+  voteButton: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  upvotedButton: {
+    backgroundColor: '#4caf50',
+  },
+  downvotedButton: {
+    backgroundColor: '#f44336',
+  },
+  voteScore: {
+    fontWeight: 'bold',
+    marginHorizontal: 4,
+    minWidth: 20,
+    textAlign: 'center',
+  },
+  likeButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f8f9fa',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+  },
+  likedButton: {
+    backgroundColor: Colors.primary,
+  },
+  likeCount: {
+    marginLeft: 4,
+    color: Colors.primary,
+    fontWeight: '500',
+  },
+  likedButtonText: {
+    color: '#fff',
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 40,
+  },
+  emptyText: {
+    fontSize: 16,
+    color: '#666',
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  emptyButton: {
+    backgroundColor: Colors.primary,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 20,
+  },
+  emptyButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
   },
   modalContainer: {
-    flex: 1,
-    justifyContent: "flex-end",
-    backgroundColor: "rgba(0,0,0,0.5)",
-  },
-  modalContent: {
-    backgroundColor: "white",
+    backgroundColor: '#fff',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    padding: 20,
-    maxHeight: "80%",
+    maxHeight: '80%',
   },
   modalHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 15,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e1e4e8',
   },
   modalTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: Colors.primary,
   },
-  formContainer: {
-    marginBottom: 20,
+  modalBody: {
+    padding: 16,
+  },
+  modalCategoryContainer: {
+    flexDirection: 'row',
+    marginBottom: 16,
   },
   inputLabel: {
-    fontSize: 16,
-    fontWeight: "500",
-    marginTop: 15,
-    marginBottom: 5,
+    fontSize: 14,
+    fontWeight: '500',
+    marginBottom: 8,
+    color: '#333',
   },
-  textInput: {
-    backgroundColor: "#f0f0f0",
-    borderRadius: 10,
+  titleInput: {
+    backgroundColor: '#f1f3f5',
+    borderRadius: 8,
     padding: 12,
+    marginBottom: 16,
     fontSize: 16,
   },
   contentInput: {
-    height: 150,
-    textAlignVertical: "top",
-  },
-  tagHint: {
-    color: "#666",
-    fontSize: 12,
-    marginTop: 5,
-    marginBottom: 20,
+    backgroundColor: '#f1f3f5',
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
+    minHeight: 120,
+    marginBottom: 16,
   },
   submitButton: {
-    backgroundColor: "#007AFF",
-    borderRadius: 10,
-    padding: 15,
-    alignItems: "center",
-    marginBottom: 30,
+    backgroundColor: Colors.primary,
+    borderRadius: 8,
+    padding: 16,
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  disabledButton: {
+    backgroundColor: '#a0a0a0',
   },
   submitButtonText: {
-    color: "white",
+    color: '#fff',
+    fontWeight: 'bold',
     fontSize: 16,
-    fontWeight: "500",
-  },
-  dateText: {
-    fontSize: 12,
-    color: "#888",
-    marginBottom: 8,
   },
 });

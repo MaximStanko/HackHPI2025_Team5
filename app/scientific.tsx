@@ -1,283 +1,522 @@
-import React, { useState, useEffect } from "react";
-import {
-  Text,
-  View,
+import React, { useState, useEffect } from 'react';
+import { 
+  View, 
+  Text, 
+  StyleSheet, 
+  FlatList, 
+  TouchableOpacity, 
+  ActivityIndicator,
+  Image,
   ScrollView,
-  TouchableOpacity,
-  StyleSheet,
-  TextInput,
-} from "react-native";
-import Post from "../components/post";
+  Linking,
+  Platform
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { getAllScientificArticles, populateScientificArticles, voteOnArticle, getUserArticleVote } from '@/utils/supabase';
+import { Colors } from './theme.js';
+import FontAwesome from '@expo/vector-icons/FontAwesome';
 
-// Update the type for study posts with an optional verified flag for authenticity
-type StudyPost = {
+type Article = {
   id: number;
-  headline: string;
+  title: string;
   content: string;
-  username: string;
-  initialScore: number;
-  tags: string[];
-  date: string; // ISO date string
-  verified?: boolean; // Indicates that this post is by an approved scientist/doctor
+  category: string;
+  upvotes: number;
+  downvotes: number;
+  source_url: string;
+  image_url: string | null;
+  created_at: string;
+  authors: string;
 };
 
-// Sample study posts data (only posts from approved users should appear)
-const STUDY_POSTS: StudyPost[] = [
-  {
-    id: 1,
-    headline: "New Research on Tinnitus Treatments",
-    content:
-      "Our recent study shows promising results with a new treatment for tinnitus involving targeted sound therapy. In a double-blind controlled trial with 120 participants, we observed a 37% reduction in perceived tinnitus intensity among the treatment group compared to 8% in the control group. Further research is needed, but these findings suggest a promising avenue for clinical applications.",
-    username: "Dr. Smith",
-    initialScore: 42,
-    tags: ["research", "tinnitus", "sound therapy"],
-    date: "2025-03-15T12:00:00Z",
-    verified: true,
-  },
-  {
-    id: 2,
-    headline: "Clinical Trials for Novel Hearing Aid Technology",
-    content:
-      "We're currently recruiting participants for Phase II clinical trials of our next-generation hearing aid technology. This innovative device uses AI to dynamically adapt to the user's environment, significantly improving speech recognition in noisy settings. Preliminary results from Phase I showed a 28% improvement in word recognition scores compared to conventional hearing aids.",
-    username: "Prof. Johnson",
-    initialScore: 35,
-    tags: ["clinical trials", "hearing aids", "AI"],
-    date: "2025-03-10T09:30:00Z",
-    verified: true,
-  },
-  {
-    id: 3,
-    headline: "Breakthrough in Understanding Auditory Processing Disorders",
-    content:
-      "Our research team has identified a previously unknown neural pathway involved in auditory processing disorders. Using advanced neuroimaging techniques, we mapped specific brain regions that show altered connectivity in patients with APD. This discovery opens new possibilities for targeted interventions and may lead to more effective diagnostic tools.",
-    username: "Dr. Garcia",
-    initialScore: 27,
-    tags: ["APD", "neuroscience", "diagnosis"],
-    date: "2025-02-28T15:45:00Z",
-    verified: true,
-  },
-];
+export default function ScientificScreen() {
+  const [articles, setArticles] = useState<Article[]>([]);
+  const [filteredArticles, setFilteredArticles] = useState<Article[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<string>('All');
+  const [loading, setLoading] = useState(true);
+  const [userId, setUserId] = useState<number | null>(null);
+  const [userVotes, setUserVotes] = useState<Record<number, 'up' | 'down' | null>>({});
+  const [sortBy, setSortBy] = useState('newest');
+  const [showSortPicker, setShowSortPicker] = useState(false);
 
-export default function Scientific() {
-  // Determine if current user is a scientist (in a real app, this would come from authentication)
-  const isScientist = false; // Most users would see this as false
-
-  const [searchText, setSearchText] = useState("");
-  const [filteredPosts, setFilteredPosts] = useState<StudyPost[]>(STUDY_POSTS);
-  const [allPosts, setAllPosts] = useState<StudyPost[]>(STUDY_POSTS);
-  const [allTags, setAllTags] = useState<string[]>(
-    Array.from(new Set(STUDY_POSTS.flatMap((post) => post.tags)))
-  );
-  const [selectedTags, setSelectedTags] = useState<string[]>([]);
-
-  const toggleTag = (tag: string) => {
-    if (selectedTags.includes(tag)) {
-      setSelectedTags(selectedTags.filter((t) => t !== tag));
-    } else {
-      setSelectedTags([...selectedTags, tag]);
-    }
-  };
-
-  const clearAllTags = () => {
-    setSelectedTags([]);
-  };
+  const categories = ['All', 'Treatment', 'Neuroscience', 'Clinical Trial', 'Molecular Biology'];
+  const sortOptions = [
+    { label: 'Newest', value: 'newest' },
+    { label: 'Most Upvoted', value: 'most_votes' },
+    { label: 'Oldest', value: 'oldest' },
+    { label: 'Controversial', value: 'controversial' },
+  ];
 
   useEffect(() => {
-    let result = allPosts;
-    if (selectedTags.length > 0) {
-      result = result.filter((post) =>
-        selectedTags.every((selectedTag) => post.tags.includes(selectedTag))
-      );
+    // Get session user ID from local storage
+    const getUserData = async () => {
+      try {
+        const sessionStr = await localStorage.getItem('session');
+        if (sessionStr) {
+          const session = JSON.parse(sessionStr);
+          setUserId(session?.user?.id);
+        }
+      } catch (e) {
+        console.error('Failed to get user ID:', e);
+      }
+    };
+
+    const loadArticles = async () => {
+      setLoading(true);
+      try {
+        // Populate example articles if none exist
+        await populateScientificArticles();
+        
+        // Get all articles with current sorting
+        const allArticles = await getAllScientificArticles(sortBy);
+        setArticles(allArticles);
+        setFilteredArticles(allArticles);
+      } catch (error) {
+        console.error('Error loading articles:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    getUserData();
+    loadArticles();
+  }, [sortBy]);
+
+  // Check user votes on articles
+  useEffect(() => {
+    const checkUserVotes = async () => {
+      if (!userId) return;
+      
+      const votesMap: Record<number, 'up' | 'down' | null> = {};
+      for (const article of articles) {
+        const voteType = await getUserArticleVote(userId, article.id);
+        votesMap[article.id] = voteType as 'up' | 'down' | null;
+      }
+      
+      setUserVotes(votesMap);
+    };
+
+    if (articles.length > 0 && userId) {
+      checkUserVotes();
     }
-    if (searchText) {
-      const lowerCaseSearch = searchText.toLowerCase();
-      result = result.filter(
-        (post) =>
-          post.headline.toLowerCase().includes(lowerCaseSearch) ||
-          post.content.toLowerCase().includes(lowerCaseSearch) ||
-          post.tags.some((tag) => tag.toLowerCase().includes(lowerCaseSearch))
-      );
+  }, [articles, userId]);
+
+  useEffect(() => {
+    if (selectedCategory === 'All') {
+      setFilteredArticles(articles);
+    } else {
+      setFilteredArticles(articles.filter(article => article.category === selectedCategory));
     }
-    setFilteredPosts(result);
-  }, [selectedTags, searchText, allPosts]);
+  }, [selectedCategory, articles]);
+
+  const handleVote = async (articleId: number, voteType: 'up' | 'down') => {
+    if (!userId) return;
+    
+    try {
+      const { voted, voteType: newVoteType, upvotes, downvotes } = await voteOnArticle(userId, articleId, voteType);
+      
+      // Update local state with new vote
+      setUserVotes(prev => ({
+        ...prev,
+        [articleId]: newVoteType
+      }));
+      
+      // Update article vote count with values from the server
+      setArticles(articles.map(article => {
+        if (article.id !== articleId) return article;
+        
+        // Use the upvotes and downvotes returned from the server
+        return { ...article, upvotes, downvotes };
+      }));
+    } catch (error) {
+      console.error('Error voting on article:', error);
+    }
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString();
+  };
+
+  const openSourceUrl = (url: string) => {
+    Linking.openURL(url).catch(err => console.error('Error opening URL:', err));
+  };
+
+  const renderArticle = ({ item }: { item: Article }) => {
+    const userVote = userVotes[item.id];
+    const voteScore = (item.upvotes || 0) - (item.downvotes || 0);
+    
+    return (
+      <View style={styles.articleCard}>
+        {item.image_url && (
+          <Image source={{ uri: item.image_url }} style={styles.articleImage} />
+        )}
+        
+        <View style={styles.articleContent}>
+          <Text style={styles.articleCategory}>{item.category}</Text>
+          <Text style={styles.articleTitle}>{item.title}</Text>
+          <Text style={styles.articleAuthors}>{item.authors}</Text>
+          <Text style={styles.articleSummary} numberOfLines={3}>{item.content}</Text>
+          
+          <View style={styles.articleFooter}>
+            <View style={styles.articleMetadata}>
+              <Text style={styles.articleDate}>{formatDate(item.created_at)}</Text>
+              {item.source_url && (
+                <TouchableOpacity 
+                  style={styles.sourceLink}
+                  onPress={() => openSourceUrl(item.source_url)}
+                >
+                  <FontAwesome name="external-link" size={14} color={Colors.primary} />
+                  <Text style={styles.sourceLinkText}>Source</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+            
+            <View style={styles.voteContainer}>
+              <TouchableOpacity 
+                style={[
+                  styles.voteButton,
+                  userVote === 'up' && styles.upvotedButton
+                ]} 
+                onPress={() => {
+                  // Add visual feedback before server response
+                  const isAlreadyUpvoted = userVote === 'up';
+                  if (!isAlreadyUpvoted) {
+                    setUserVotes(prev => ({
+                      ...prev,
+                      [item.id]: 'up'
+                    }));
+                  }
+                  handleVote(item.id, 'up');
+                }}
+              >
+                <FontAwesome 
+                  name="arrow-up" 
+                  size={14} 
+                  color={userVote === 'up' ? "#fff" : "#666"} 
+                />
+              </TouchableOpacity>
+              
+              <Text style={styles.voteScore}>
+                {voteScore}
+              </Text>
+              
+              <TouchableOpacity 
+                style={[
+                  styles.voteButton,
+                  userVote === 'down' && styles.downvotedButton
+                ]} 
+                onPress={() => {
+                  // Add visual feedback before server response
+                  const isAlreadyDownvoted = userVote === 'down';
+                  if (!isAlreadyDownvoted) {
+                    setUserVotes(prev => ({
+                      ...prev,
+                      [item.id]: 'down'
+                    }));
+                  }
+                  handleVote(item.id, 'down');
+                }}
+              >
+                <FontAwesome 
+                  name="arrow-down" 
+                  size={14} 
+                  color={userVote === 'down' ? "#fff" : "#666"} 
+                />
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </View>
+    );
+  };
 
   return (
-    <View
-      style={{ flex: 1, justifyContent: "flex-start", backgroundColor: "#fff" }}
-    >
-      <View style={styles.searchContainer}>
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Search medical studies..."
-          value={searchText}
-          onChangeText={setSearchText}
-        />
+    <SafeAreaView style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.title}>Scientific Research</Text>
+        
+        <TouchableOpacity 
+          style={styles.sortButton}
+          onPress={() => setShowSortPicker(!showSortPicker)}
+        >
+          <FontAwesome name="sort" size={16} color="#666" />
+          <Text style={styles.sortButtonText}>
+            {sortOptions.find(opt => opt.value === sortBy)?.label}
+          </Text>
+        </TouchableOpacity>
       </View>
-
-      <View style={styles.tagControlsContainer}>
-        <Text style={styles.tagFilterTitle}>Filter by medical fields:</Text>
-        {selectedTags.length > 0 && (
-          <TouchableOpacity onPress={clearAllTags}>
-            <Text style={styles.clearTagsButton}>Clear all</Text>
-          </TouchableOpacity>
-        )}
-      </View>
-
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={styles.tagFilterContainer}
-      >
-        {allTags.map((tag, index) => (
-          <TouchableOpacity
-            key={index}
-            style={[
-              styles.tagFilter,
-              selectedTags.includes(tag) && styles.selectedTagFilter,
-            ]}
-            onPress={() => toggleTag(tag)}
-          >
-            <Text
+      
+      {showSortPicker && (
+        <View style={styles.sortPickerContainer}>
+          {sortOptions.map(option => (
+            <TouchableOpacity
+              key={option.value}
               style={[
-                styles.tagFilterText,
-                selectedTags.includes(tag) && styles.selectedTagFilterText,
+                styles.sortOption,
+                sortBy === option.value && styles.selectedSortOption
+              ]}
+              onPress={() => {
+                setSortBy(option.value);
+                setShowSortPicker(false);
+              }}
+            >
+              <Text style={[
+                styles.sortOptionText,
+                sortBy === option.value && styles.selectedSortOptionText
+              ]}>
+                {option.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
+      
+      <ScrollView 
+        horizontal 
+        showsHorizontalScrollIndicator={false} 
+        contentContainerStyle={styles.categoryScrollContainer}
+        style={styles.categoryContainer}
+      >
+        {categories.map(category => (
+          <TouchableOpacity
+            key={category}
+            style={[
+              styles.categoryButton,
+              selectedCategory === category && styles.selectedCategoryButton
+            ]}
+            onPress={() => setSelectedCategory(category)}
+          >
+            <Text 
+              style={[
+                styles.categoryText,
+                selectedCategory === category && styles.selectedCategoryText
               ]}
             >
-              #{tag}
+              {category}
             </Text>
           </TouchableOpacity>
         ))}
       </ScrollView>
-
-      <ScrollView
-        contentContainerStyle={{
-          paddingBottom: 16,
-          justifyContent: "flex-start",
-        }}
-      >
-        {filteredPosts.length > 0 ? (
-          filteredPosts.map((post) => (
-            <Post
-              key={post.id}
-              headline={post.headline}
-              content={post.content}
-              username={post.username}
-              initialScore={post.initialScore}
-              tags={post.tags}
-              date={post.date}
-              verified={post.verified}
-              doctorIcon={post.verified}
-              serious={true}
-            />
-          ))
-        ) : (
-          <View style={styles.noResultsContainer}>
-            <Text style={styles.noResultsText}>
-              No medical studies found matching your criteria.
-            </Text>
-          </View>
-        )}
-      </ScrollView>
-
-      {/* The create post button is only shown to scientists */}
-      {isScientist && (
-        <TouchableOpacity style={styles.createPostButton} onPress={() => {}}>
-          <Text style={styles.createPostButtonText}>+</Text>
-        </TouchableOpacity>
+      
+      {loading ? (
+        <ActivityIndicator size="large" color={Colors.primary} style={styles.loader} />
+      ) : (
+        <FlatList
+          data={filteredArticles}
+          renderItem={renderArticle}
+          keyExtractor={(item) => item.id.toString()}
+          contentContainerStyle={styles.listContainer}
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyText}>No articles in this category yet.</Text>
+            </View>
+          }
+        />
       )}
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  searchContainer: {
-    padding: 16,
-    paddingBottom: 8,
+  container: {
+    flex: 1,
+    backgroundColor: '#f8f9fa',
   },
-  searchInput: {
-    backgroundColor: "#f0f0f0",
-    borderRadius: 20,
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e1e4e8',
+    backgroundColor: '#fff',
+  },
+  title: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: Colors.primary,
+  },
+  sortButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    backgroundColor: '#f1f3f5',
+  },
+  sortButtonText: {
+    fontSize: 12,
+    color: '#666',
+    marginLeft: 4,
+  },
+  sortPickerContainer: {
+    backgroundColor: 'white',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e1e4e8',
+    paddingVertical: 8,
+  },
+  sortOption: {
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+  },
+  selectedSortOption: {
+    backgroundColor: '#f1f3f5',
+  },
+  sortOptionText: {
+    fontSize: 14,
+    color: '#333',
+  },
+  selectedSortOptionText: {
+    fontWeight: 'bold',
+    color: Colors.primary,
+  },
+  categoryContainer: {
+    flexDirection: 'row',
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e1e4e8',
+  },
+  categoryScrollContainer: {
+    paddingLeft: 4,
+    paddingRight: 4,
+  },
+  categoryButton: {
     paddingHorizontal: 16,
     paddingVertical: 8,
-    fontSize: 16,
-  },
-  tagControlsContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingTop: 8,
-  },
-  tagFilterTitle: {
-    fontSize: 14,
-    fontWeight: "500",
-    color: "#666",
-  },
-  clearTagsButton: {
-    fontSize: 14,
-    color: "#007AFF",
-    fontWeight: "500",
-  },
-  tagFilterContainer: {
-    paddingHorizontal: 16,
-    paddingTop: 8,
-    paddingBottom: 16,
-  },
-  tagFilter: {
-    backgroundColor: "#f0f0f0",
+    marginHorizontal: 4,
     borderRadius: 20,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    marginRight: 8,
-    width: 100,
-    height: 36,
-    justifyContent: "center",
-    alignItems: "center",
-    overflow: "hidden",
+    backgroundColor: '#f1f3f5',
+    minWidth: 80,
+    alignItems: 'center',
   },
-  selectedTagFilter: {
-    backgroundColor: "#007AFF",
+  selectedCategoryButton: {
+    backgroundColor: Colors.primary,
   },
-  tagFilterText: {
-    color: "#555",
-    fontSize: 14,
-    fontWeight: "500",
-    textAlign: "center",
+  categoryText: {
+    color: '#333',
+    fontWeight: '500',
   },
-  selectedTagFilterText: {
-    color: "white",
+  selectedCategoryText: {
+    color: '#fff',
   },
-  postsContainer: {
-    paddingBottom: 16,
+  loader: {
+    marginTop: 20,
   },
-  noResultsContainer: {
-    padding: 20,
-    alignItems: "center",
+  listContainer: {
+    padding: 12,
   },
-  noResultsText: {
-    fontSize: 16,
-    color: "#555",
-    textAlign: "center",
-  },
-  createPostButton: {
-    position: "absolute",
-    right: 20,
-    bottom: 20,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: "#0969da",
-    alignItems: "center",
-    justifyContent: "center",
-    elevation: 5,
-    shadowColor: "#000",
+  articleCard: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    marginBottom: 16,
+    overflow: 'hidden',
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
-  createPostButtonText: {
-    color: "white",
-    fontSize: 24,
-    fontWeight: "bold",
+  articleImage: {
+    width: '100%',
+    height: 180,
+    resizeMode: 'cover',
+  },
+  articleContent: {
+    padding: 16,
+  },
+  articleCategory: {
+    color: Colors.primary,
+    fontWeight: '500',
+    fontSize: 12,
+    marginBottom: 4,
+  },
+  articleTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 4,
+    color: '#333',
+  },
+  articleAuthors: {
+    fontSize: 13,
+    fontStyle: 'italic',
+    color: '#666',
+    marginBottom: 8,
+  },
+  articleSummary: {
+    fontSize: 14,
+    color: '#666',
+    lineHeight: 20,
+    marginBottom: 16,
+  },
+  articleFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderTopWidth: 1,
+    borderTopColor: '#f1f3f5',
+    paddingTop: 12,
+  },
+  articleMetadata: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  articleDate: {
+    fontSize: 12,
+    color: '#999',
+    marginRight: 12,
+  },
+  sourceLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    backgroundColor: '#f8f9fa',
+    borderRadius: 12,
+  },
+  sourceLinkText: {
+    fontSize: 12,
+    color: Colors.primary,
+    fontWeight: '500',
+    marginLeft: 4,
+  },
+  voteContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f8f9fa',
+    borderRadius: 16,
+    paddingHorizontal: 4,
+  },
+  voteButton: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  upvotedButton: {
+    backgroundColor: '#4caf50',
+  },
+  downvotedButton: {
+    backgroundColor: '#f44336',
+  },
+  voteScore: {
+    fontWeight: 'bold',
+    marginHorizontal: 4,
+    minWidth: 20,
+    textAlign: 'center',
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 40,
+  },
+  emptyText: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
   },
 });
