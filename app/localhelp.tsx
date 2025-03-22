@@ -6,23 +6,19 @@ const berlinDoctors = [
   { id: '1', name: 'Telefonseelsorge Deutschland', phone: '0800 111 0111' },
   { id: '2', name: 'Deutsche Tinnitus-Liga e.V.', phone: '0202 24652-0' },
   { id: '3', name: 'Nummer gegen Kummer (Youth)', phone: '116 111' },
-  { id: '3', name: 'Nummer gegen Kummer (Parents)', phone: '0800 111 0550' },
-
-  // Add more doctors as needed
+  { id: '4', name: 'Nummer gegen Kummer (Parents)', phone: '0800 111 0550' },
 ];
 
 const berlinLocations = [
-  { id: '1', name: 'https://krisenchat.de/  ' },
-  { id: '2', name: 'https://tinnitus-care.berlin/ ' },
-  { id: '3', name: 'https://tinnituszentrum.charite.de/ ' },
-  // Add more locations as needed
+  { id: '1', name: 'https://krisenchat.de/' },
+  { id: '2', name: 'https://tinnitus-care.berlin/' },
+  { id: '3', name: 'https://tinnituszentrum.charite.de/' },
 ];
 
 const berlinFood = [
   { id: '1', name: 'Currywurst' },
   { id: '2', name: 'Berliner' },
   { id: '3', name: 'Pretzel' },
-  // Add more food items as needed
 ];
 
 type Doctor = {
@@ -41,14 +37,14 @@ type Food = {
   name: string;
 };
 
-export default function BetterHelp() {
+export default function LocalHelp() {
   const [city, setCity] = useState('');
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
   const [food, setFood] = useState<Food[]>([]);
 
   const handleSearch = () => {
-    Keyboard.dismiss(); // Dismiss the keyboard
+    Keyboard.dismiss();
     if (city.toLowerCase() === 'berlin') {
       setDoctors(berlinDoctors);
       setLocations(berlinLocations);
@@ -63,11 +59,14 @@ export default function BetterHelp() {
   return (
     <SafeAreaView style={styles.mainContainer}>
       <View style={styles.header}>
-        <Text style={styles.title}>Betterhelp</Text>
+        <Text style={styles.title}>LocalHelp</Text>
       </View>
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <View style={styles.container}>
           <View style={styles.searchContainer}>
+            <Text style={styles.explanationText}>
+              Enter the name of a city to find relevant hotlines, websites, and food items.
+            </Text>
             <TextInput
               style={styles.input}
               placeholder="Enter city name"
@@ -87,7 +86,7 @@ export default function BetterHelp() {
                   </View>
                 ))}
                 {doctors.length === 0 && (
-                  <Text style={styles.noResults}>No doctors found</Text>
+                  <Text style={styles.noResults}>No hotlines found</Text>
                 )}
               </>
             )}
@@ -103,7 +102,7 @@ export default function BetterHelp() {
                   </View>
                 ))}
                 {locations.length === 0 && (
-                  <Text style={styles.noResults}>No locations found</Text>
+                  <Text style={styles.noResults}>No websites found</Text>
                 )}
               </>
             )}
@@ -127,9 +126,6 @@ export default function BetterHelp() {
               <View style={styles.separator} />
             )}
           </View>
-          {/* <View style={styles.footer}>
-            <Text style={styles.footerText}>Footer content here</Text>
-          </View> */}
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -153,17 +149,11 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    paddingHorizontal: 16,
   },
   listContainer: {
     flex: 2,
     paddingHorizontal: 16,
-  },
-  footer: {
-    flex: 0.5,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderTopWidth: 1,
-    borderTopColor: '#ccc',
   },
   input: {
     height: 40,
@@ -175,7 +165,7 @@ const styles = StyleSheet.create({
   },
   item: {
     padding: 16,
-    borderBottomWidth: 0, // Remove the border bottom from individual items
+    borderBottomWidth: 0,
     flexDirection: 'row',
     alignItems: 'center',
   },
@@ -186,6 +176,7 @@ const styles = StyleSheet.create({
   phone: {
     fontSize: 16,
     color: '#555',
+    marginLeft: 10,
   },
   noResults: {
     textAlign: 'center',
@@ -199,13 +190,9 @@ const styles = StyleSheet.create({
     marginTop: 16,
     marginBottom: 8,
   },
-  footerText: {
-    fontSize: 16,
-    color: '#555',
-  },
   separator: {
-    height: 2, // Make the separator lines more distinct
-    backgroundColor: '#888', // Darker color for better visibility
+    height: 2,
+    backgroundColor: '#888',
     marginVertical: 16,
   },
   header: {
@@ -222,5 +209,11 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     color: Colors.primary,
+  },
+  explanationText: {
+    fontSize: 16,
+    color: '#555',
+    marginBottom: 16,
+    textAlign: 'center',
   },
 });
