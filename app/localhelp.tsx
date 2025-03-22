@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Text, View, FlatList, StyleSheet, TextInput, Button, Keyboard, ScrollView, SafeAreaView } from 'react-native';
+import { Text, View, StyleSheet, TextInput, Button, Keyboard, ScrollView, SafeAreaView, TouchableOpacity, Linking } from 'react-native';
 import { Colors } from './theme.js';
 
 const berlinDoctors = [
@@ -56,6 +56,10 @@ export default function LocalHelp() {
     }
   };
 
+  const handleLinkPress = (url: string) => {
+    Linking.openURL(url);
+  };
+
   return (
     <SafeAreaView style={styles.mainContainer}>
       <View style={styles.header}>
@@ -97,19 +101,20 @@ export default function LocalHelp() {
               <>
                 <Text style={styles.sectionTitle}>Websites</Text>
                 {locations.map((location) => (
-                  <View key={location.id} style={styles.item}>
-                    <Text style={styles.name}>{location.name}</Text>
-                  </View>
+                  <TouchableOpacity key={location.id} onPress={() => handleLinkPress(location.name)} style={styles.item}>
+                    <Text style={styles.link}>{location.name}</Text>
+                  </TouchableOpacity>
                 ))}
                 {locations.length === 0 && (
                   <Text style={styles.noResults}>No websites found</Text>
                 )}
               </>
             )}
-            {locations.length > 0 && food.length > 0 && (
+            {/* Commenting out the food category */}
+            {/* {locations.length > 0 && food.length > 0 && (
               <View style={styles.separator} />
-            )}
-            {food.length > 0 && (
+            )} */}
+            {/* {food.length > 0 && (
               <>
                 <Text style={styles.sectionTitle}>Food</Text>
                 {food.map((foodItem) => (
@@ -121,7 +126,7 @@ export default function LocalHelp() {
                   <Text style={styles.noResults}>No food items found</Text>
                 )}
               </>
-            )}
+            )} */}
             {(doctors.length > 0 || locations.length > 0 || food.length > 0) && (
               <View style={styles.separator} />
             )}
@@ -177,6 +182,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#555',
     marginLeft: 10,
+  },
+  link: {
+    fontSize: 18,
+    color: '#1e90ff',
+    textDecorationLine: 'underline',
   },
   noResults: {
     textAlign: 'center',
